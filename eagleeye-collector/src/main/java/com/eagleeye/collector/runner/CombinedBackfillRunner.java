@@ -2,6 +2,8 @@ package com.eagleeye.collector.runner;
 
 import com.eagleeye.collector.service.CollectionResult;
 import com.eagleeye.collector.service.CollectionService;
+import com.eagleeye.collector.service.MarginCollectionResult;
+import com.eagleeye.collector.service.MarginTransactionService;
 import com.eagleeye.collector.service.MarketIndexCollectionResult;
 import com.eagleeye.collector.service.MarketIndexService;
 import org.slf4j.Logger;
@@ -42,22 +44,26 @@ public class CombinedBackfillRunner implements ApplicationRunner {
 
     private final MarketIndexService marketIndexService;
     private final CollectionService collectionService;
+    private final MarginTransactionService marginTransactionService;
     private final ApplicationContext applicationContext;
     private final long requestDelayMs;
 
     @Autowired
     public CombinedBackfillRunner(MarketIndexService marketIndexService,
                                   CollectionService collectionService,
-                                  ApplicationContext applicationContext) {
-        this(marketIndexService, collectionService, applicationContext, 500);
+                                  ApplicationContext applicationContext,
+                                  MarginTransactionService marginTransactionService) {
+        this(marketIndexService, collectionService, applicationContext, marginTransactionService, 500);
     }
 
     CombinedBackfillRunner(MarketIndexService marketIndexService,
                            CollectionService collectionService,
                            ApplicationContext applicationContext,
+                           MarginTransactionService marginTransactionService,
                            long requestDelayMs) {
         this.marketIndexService = marketIndexService;
         this.collectionService = collectionService;
+        this.marginTransactionService = marginTransactionService;
         this.applicationContext = applicationContext;
         this.requestDelayMs = requestDelayMs;
     }
@@ -101,6 +107,10 @@ public class CombinedBackfillRunner implements ApplicationRunner {
                     CollectionResult result = collectionService.collectAll(day);
                     printTaifex(day, result);
                     Thread.sleep(requestDelayMs);
+
+                    MarginCollectionResult marginResult = marginTransactionService.collectDate(day);
+                    printMargin(day, marginResult);
+                    Thread.sleep(requestDelayMs);
                 }
                 day = day.plusDays(1);
             }
@@ -126,5 +136,14 @@ public class CombinedBackfillRunner implements ApplicationRunner {
             case ERROR     -> "ERROR: " + r.errorMessage();
         };
         System.out.printf("  [TAIFEX]  %-12s  %s%n", date, status);
+    }
+
+    private void printMargin(LocalDate date, MarginCollectionResult r) {
+        String status = switch (r.status()) {
+            case COLLECTED -> "collected";
+            case NO_DATA   -> "no data";
+            case ERROR     -> "ERROR: " + r.errorMessage();
+        };
+        System.out.printf("  [MARGIN]  %-12s  %s%n", date, status);
     }
 }

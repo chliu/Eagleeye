@@ -1,6 +1,7 @@
 package com.eagleeye.shell.formatter;
 
 import com.eagleeye.domain.entity.FuturesPosition;
+import com.eagleeye.domain.entity.MarginDailyBar;
 import com.eagleeye.domain.entity.OptionsPosition;
 import com.eagleeye.domain.entity.TaiexDailyBar;
 import org.springframework.stereotype.Component;
@@ -41,6 +42,7 @@ public class TableFormatter {
     private static final int W_OHLC      = 12;  // e.g. "29,349.81"
     private static final int W_VOLUME    = 14;  // e.g. "10,724,729,528"
     private static final int W_TURNOVER  = 16;  // e.g. "669,781,989,470"
+    private static final int W_MARGIN    = 11;  // e.g. "8,109,024" (9 chars)
 
     // Box-drawing characters
     private static final char H  = '─';
@@ -103,6 +105,30 @@ public class TableFormatter {
                     fmtOhlc(b.getClose()),
                     fmtVol(b.getVolume()),
                     fmtVol(b.getTurnover())
+            ));
+        }
+        return renderTable(headers, widths, rows);
+    }
+
+    /** Taiwan market-wide margin transaction daily summary. Columns: Date + 8 numeric. */
+    public String formatMarginTransaction(List<MarginDailyBar> bars) {
+        if (bars.isEmpty()) return "No data found.";
+
+        int[] widths  = {W_DATE, W_MARGIN, W_MARGIN, W_MARGIN, W_MARGIN, W_MARGIN, W_MARGIN, W_MARGIN, W_MARGIN};
+        String[] headers = {"Date", "M-Buy", "M-Sell", "M-Redeem", "M-Bal", "S-Cover", "S-Sell", "S-Redeem", "S-Bal"};
+
+        List<Row> rows = new ArrayList<>();
+        for (MarginDailyBar b : bars) {
+            rows.add(Row.data(
+                    b.getTradeDate().toString(),
+                    fmtVol(b.getMarginPurchase()),
+                    fmtVol(b.getMarginSale()),
+                    fmtVol(b.getMarginCashRedemption()),
+                    fmtVol(b.getMarginBalance()),
+                    fmtVol(b.getShortCovering()),
+                    fmtVol(b.getShortSale()),
+                    fmtVol(b.getShortStockRedemption()),
+                    fmtVol(b.getShortBalance())
             ));
         }
         return renderTable(headers, widths, rows);

@@ -2,6 +2,8 @@ package com.eagleeye.collector.runner;
 
 import com.eagleeye.collector.service.CollectionResult;
 import com.eagleeye.collector.service.CollectionService;
+import com.eagleeye.collector.service.MarginCollectionResult;
+import com.eagleeye.collector.service.MarginTransactionService;
 import com.eagleeye.collector.service.MarketIndexCollectionResult;
 import com.eagleeye.collector.service.MarketIndexService;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,12 +23,13 @@ class CombinedBackfillRunnerTest {
 
     @Mock private MarketIndexService marketIndexService;
     @Mock private CollectionService collectionService;
+    @Mock private MarginTransactionService marginTransactionService;
 
     private CombinedBackfillRunner runner;
 
     @BeforeEach
     void setUp() {
-        runner = new CombinedBackfillRunner(marketIndexService, collectionService, null, 0);
+        runner = new CombinedBackfillRunner(marketIndexService, collectionService, null, marginTransactionService, 0);
     }
 
     // ── Market index: once per month ────────────────────────────────────────────
@@ -35,6 +38,7 @@ class CombinedBackfillRunnerTest {
     void executeBackfill_collectsMarketIndexOnceForSingleMonth() throws Exception {
         stubMarketIndex(YearMonth.of(2026, 3));
         stubTaifex();
+        stubMargin();
 
         runner.executeBackfill(LocalDate.of(2026, 3, 3), LocalDate.of(2026, 3, 7));
 
@@ -47,6 +51,7 @@ class CombinedBackfillRunnerTest {
         stubMarketIndex(YearMonth.of(2026, 2));
         stubMarketIndex(YearMonth.of(2026, 3));
         stubTaifex();
+        stubMargin();
 
         runner.executeBackfill(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 3, 31));
 
@@ -63,6 +68,7 @@ class CombinedBackfillRunnerTest {
         // 2026-03-03 (Tue) to 2026-03-06 (Fri) = 4 weekdays
         stubMarketIndex(YearMonth.of(2026, 3));
         stubTaifex();
+        stubMargin();
 
         runner.executeBackfill(LocalDate.of(2026, 3, 3), LocalDate.of(2026, 3, 6));
 
@@ -78,6 +84,7 @@ class CombinedBackfillRunnerTest {
         // 2026-03-06 (Fri) to 2026-03-09 (Mon) = Fri + Mon = 2 weekdays, Sat/Sun skipped
         stubMarketIndex(YearMonth.of(2026, 3));
         stubTaifex();
+        stubMargin();
 
         runner.executeBackfill(LocalDate.of(2026, 3, 6), LocalDate.of(2026, 3, 9));
 
@@ -95,6 +102,7 @@ class CombinedBackfillRunnerTest {
         // Range starts mid-month: only days from 2026-03-25 onward collected
         stubMarketIndex(YearMonth.of(2026, 3));
         stubTaifex();
+        stubMargin();
 
         // 2026-03-25 (Wed) to 2026-03-26 (Thu) = 2 days
         runner.executeBackfill(LocalDate.of(2026, 3, 25), LocalDate.of(2026, 3, 26));
@@ -102,6 +110,37 @@ class CombinedBackfillRunnerTest {
         verify(collectionService, times(2)).collectAll(any(LocalDate.class));
         verify(collectionService, never()).collectAll(LocalDate.of(2026, 3, 24));
         verify(collectionService, never()).collectAll(LocalDate.of(2026, 3, 27));
+    }
+
+    // ── Margin: every weekday in range ──────────────────────────────────────────
+
+    @Test
+    void executeBackfill_collectsMarginForEachWeekday() throws Exception {
+        // 2026-03-03 (Tue) to 2026-03-06 (Fri) = 4 weekdays
+        stubMarketIndex(YearMonth.of(2026, 3));
+        stubTaifex();
+        stubMargin();
+
+        runner.executeBackfill(LocalDate.of(2026, 3, 3), LocalDate.of(2026, 3, 6));
+
+        verify(marginTransactionService, times(4)).collectDate(any(LocalDate.class));
+        verify(marginTransactionService).collectDate(LocalDate.of(2026, 3, 3));
+        verify(marginTransactionService).collectDate(LocalDate.of(2026, 3, 4));
+        verify(marginTransactionService).collectDate(LocalDate.of(2026, 3, 5));
+        verify(marginTransactionService).collectDate(LocalDate.of(2026, 3, 6));
+    }
+
+    @Test
+    void executeBackfill_skipsMarginOnWeekends() throws Exception {
+        stubMarketIndex(YearMonth.of(2026, 3));
+        stubTaifex();
+        stubMargin();
+
+        runner.executeBackfill(LocalDate.of(2026, 3, 6), LocalDate.of(2026, 3, 9));
+
+        verify(marginTransactionService, times(2)).collectDate(any(LocalDate.class));
+        verify(marginTransactionService, never()).collectDate(LocalDate.of(2026, 3, 7)); // Sat
+        verify(marginTransactionService, never()).collectDate(LocalDate.of(2026, 3, 8)); // Sun
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -114,5 +153,10 @@ class CombinedBackfillRunnerTest {
     private void stubTaifex() {
         when(collectionService.collectAll(any(LocalDate.class)))
                 .thenReturn(CollectionResult.collected(LocalDate.now(), 10, 10));
+    }
+
+    private void stubMargin() {
+        when(marginTransactionService.collectDate(any(LocalDate.class)))
+                .thenReturn(MarginCollectionResult.collected(LocalDate.now()));
     }
 }
