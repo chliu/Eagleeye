@@ -10,7 +10,9 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Parses TWSE TAIEX monthly JSON into TaiexDailyBar entities.
@@ -18,8 +20,8 @@ import java.util.List;
  * Column order (positional):
  *   [0] Date (ROC calendar "YYY/MM/DD")
  *   [1] Open, [2] High, [3] Low, [4] Close  (fractional, comma-separated)
- *   [5] Volume (integer, comma-separated)
- *   [6] Turnover (integer, comma-separated)
+ *
+ * Volume and turnover are not provided by this endpoint and will be null.
  *
  * OHLC values are stored as fixed-point integers (×100):
  *   "20,234.56" → strip commas → BigDecimal("20234.56") × 100 → 2023456L
@@ -72,13 +74,49 @@ public class TwseParser {
             bar.setHigh(toFixedPoint(row.get(2).asText()));
             bar.setLow(toFixedPoint(row.get(3).asText()));
             bar.setClose(toFixedPoint(row.get(4).asText()));
-            bar.setVolume(toLong(row.get(5).asText()));
-            bar.setTurnover(toLong(row.get(6).asText()));
             return bar;
         } catch (Exception e) {
             log.warn("Skipping unparseable row {}: {}", row, e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Parses FMTQIK market statistics JSON into a map of date → [volume, turnover].
+     *
+     * Column order:
+     *   [0] Date (ROC "YYY/MM/DD")
+     *   [1] Volume — 成交股數 (shares traded)
+     *   [2] Turnover — 成交金額 (NTD value)
+     *   [3] Transaction count (ignored)
+     *   [4] TAIEX close (ignored — already from MI_5MINS_HIST)
+     *   [5] Change (ignored)
+     */
+    public Map<LocalDate, long[]> parseVolumeByDate(String json) {
+        Map<LocalDate, long[]> result = new HashMap<>();
+        JsonNode root;
+        try {
+            root = objectMapper.readTree(json);
+        } catch (Exception e) {
+            log.warn("Failed to parse market stats JSON: {}", truncate(json));
+            return result;
+        }
+
+        if (!"OK".equals(root.path("stat").asText(""))) {
+            return result;
+        }
+
+        for (JsonNode row : root.path("data")) {
+            try {
+                LocalDate date = parseRocDate(row.get(0).asText());
+                long volume   = toLong(row.get(1).asText());
+                long turnover = toLong(row.get(2).asText());
+                result.put(date, new long[]{volume, turnover});
+            } catch (Exception e) {
+                log.warn("Skipping unparseable market stats row {}: {}", row, e.getMessage());
+            }
+        }
+        return result;
     }
 
     /**

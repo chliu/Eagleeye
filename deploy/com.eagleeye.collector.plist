@@ -8,7 +8,8 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/bin/java</string>
+        <string>/usr/local/opt/openjdk@25/bin/java</string>
+        <string>--enable-native-access=ALL-UNNAMED</string>
         <string>-jar</string>
         <string>/opt/eagleeye/collector/eagleeye-collector.jar</string>
         <string>--spring.profiles.active=prod</string>

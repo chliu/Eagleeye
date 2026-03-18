@@ -1,0 +1,118 @@
+package com.eagleeye.collector.runner;
+
+import com.eagleeye.collector.service.CollectionResult;
+import com.eagleeye.collector.service.CollectionService;
+import com.eagleeye.collector.service.MarketIndexCollectionResult;
+import com.eagleeye.collector.service.MarketIndexService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.LocalDate;
+import java.time.YearMonth;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class CombinedBackfillRunnerTest {
+
+    @Mock private MarketIndexService marketIndexService;
+    @Mock private CollectionService collectionService;
+
+    private CombinedBackfillRunner runner;
+
+    @BeforeEach
+    void setUp() {
+        runner = new CombinedBackfillRunner(marketIndexService, collectionService, null, 0);
+    }
+
+    // ── Market index: once per month ────────────────────────────────────────────
+
+    @Test
+    void executeBackfill_collectsMarketIndexOnceForSingleMonth() throws Exception {
+        stubMarketIndex(YearMonth.of(2026, 3));
+        stubTaifex();
+
+        runner.executeBackfill(LocalDate.of(2026, 3, 3), LocalDate.of(2026, 3, 7));
+
+        verify(marketIndexService, times(1)).collectMonth(YearMonth.of(2026, 3));
+    }
+
+    @Test
+    void executeBackfill_collectsMarketIndexOncePerMonthAcrossRange() throws Exception {
+        stubMarketIndex(YearMonth.of(2026, 1));
+        stubMarketIndex(YearMonth.of(2026, 2));
+        stubMarketIndex(YearMonth.of(2026, 3));
+        stubTaifex();
+
+        runner.executeBackfill(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 3, 31));
+
+        verify(marketIndexService, times(1)).collectMonth(YearMonth.of(2026, 1));
+        verify(marketIndexService, times(1)).collectMonth(YearMonth.of(2026, 2));
+        verify(marketIndexService, times(1)).collectMonth(YearMonth.of(2026, 3));
+        verify(marketIndexService, times(3)).collectMonth(any());
+    }
+
+    // ── TAIFEX: every weekday in range ──────────────────────────────────────────
+
+    @Test
+    void executeBackfill_collectsTaifexForEachWeekdayInRange() throws Exception {
+        // 2026-03-03 (Tue) to 2026-03-06 (Fri) = 4 weekdays
+        stubMarketIndex(YearMonth.of(2026, 3));
+        stubTaifex();
+
+        runner.executeBackfill(LocalDate.of(2026, 3, 3), LocalDate.of(2026, 3, 6));
+
+        verify(collectionService, times(4)).collectAll(any(LocalDate.class));
+        verify(collectionService).collectAll(LocalDate.of(2026, 3, 3));
+        verify(collectionService).collectAll(LocalDate.of(2026, 3, 4));
+        verify(collectionService).collectAll(LocalDate.of(2026, 3, 5));
+        verify(collectionService).collectAll(LocalDate.of(2026, 3, 6));
+    }
+
+    @Test
+    void executeBackfill_skipsWeekends() throws Exception {
+        // 2026-03-06 (Fri) to 2026-03-09 (Mon) = Fri + Mon = 2 weekdays, Sat/Sun skipped
+        stubMarketIndex(YearMonth.of(2026, 3));
+        stubTaifex();
+
+        runner.executeBackfill(LocalDate.of(2026, 3, 6), LocalDate.of(2026, 3, 9));
+
+        verify(collectionService, times(2)).collectAll(any(LocalDate.class));
+        verify(collectionService).collectAll(LocalDate.of(2026, 3, 6));
+        verify(collectionService).collectAll(LocalDate.of(2026, 3, 9));
+        verify(collectionService, never()).collectAll(LocalDate.of(2026, 3, 7)); // Sat
+        verify(collectionService, never()).collectAll(LocalDate.of(2026, 3, 8)); // Sun
+    }
+
+    // ── Month boundaries ────────────────────────────────────────────────────────
+
+    @Test
+    void executeBackfill_taifexOnlyWithinGivenRange() throws Exception {
+        // Range starts mid-month: only days from 2026-03-25 onward collected
+        stubMarketIndex(YearMonth.of(2026, 3));
+        stubTaifex();
+
+        // 2026-03-25 (Wed) to 2026-03-26 (Thu) = 2 days
+        runner.executeBackfill(LocalDate.of(2026, 3, 25), LocalDate.of(2026, 3, 26));
+
+        verify(collectionService, times(2)).collectAll(any(LocalDate.class));
+        verify(collectionService, never()).collectAll(LocalDate.of(2026, 3, 24));
+        verify(collectionService, never()).collectAll(LocalDate.of(2026, 3, 27));
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────────────────────
+
+    private void stubMarketIndex(YearMonth ym) {
+        when(marketIndexService.collectMonth(ym))
+                .thenReturn(MarketIndexCollectionResult.collected(ym, 20));
+    }
+
+    private void stubTaifex() {
+        when(collectionService.collectAll(any(LocalDate.class)))
+                .thenReturn(CollectionResult.collected(LocalDate.now(), 10, 10));
+    }
+}

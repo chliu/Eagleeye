@@ -37,7 +37,16 @@ class MarketIndexServiceTest {
             {
               "stat": "OK",
               "data": [
-                ["115/03/03", "20,234.56", "20,456.78", "20,100.23", "20,300.45", "3,456,789", "123,456,789,012"]
+                ["115/03/03", "20,234.56", "20,456.78", "20,100.23", "20,300.45"]
+              ]
+            }
+            """;
+
+    private static final String ONE_BAR_STATS_JSON = """
+            {
+              "stat": "OK",
+              "data": [
+                ["115/03/03", "3,456,789", "123,456,789,012", "1,234,567", "20,300.45", "65.89"]
               ]
             }
             """;
@@ -53,9 +62,14 @@ class MarketIndexServiceTest {
         service = new MarketIndexService(twseClient, realParser, repository);
     }
 
+    private static final String NO_STATS_JSON = """
+            { "stat": "NO DATA", "data": [] }
+            """;
+
     @Test
     void collectMonth_whenDataPresent_upsertsBarAndReturnsCollected() {
         when(twseClient.fetchMonthJson(MARCH_2026)).thenReturn(ONE_BAR_JSON);
+        when(twseClient.fetchMarketStatsJson(MARCH_2026)).thenReturn(NO_STATS_JSON);
         when(repository.findByTradeDate(LocalDate.of(2026, 3, 3))).thenReturn(Optional.empty());
 
         MarketIndexCollectionResult result = service.collectMonth(MARCH_2026);
@@ -91,6 +105,7 @@ class MarketIndexServiceTest {
     @Test
     void collectDate_delegatesToCollectMonth() {
         when(twseClient.fetchMonthJson(MARCH_2026)).thenReturn(ONE_BAR_JSON);
+        when(twseClient.fetchMarketStatsJson(MARCH_2026)).thenReturn(NO_STATS_JSON);
         when(repository.findByTradeDate(any())).thenReturn(Optional.empty());
 
         MarketIndexCollectionResult result = service.collectDate(LocalDate.of(2026, 3, 15));
@@ -106,6 +121,7 @@ class MarketIndexServiceTest {
         existing.setClose(1000000L);
 
         when(twseClient.fetchMonthJson(MARCH_2026)).thenReturn(ONE_BAR_JSON);
+        when(twseClient.fetchMarketStatsJson(MARCH_2026)).thenReturn(NO_STATS_JSON);
         when(repository.findByTradeDate(LocalDate.of(2026, 3, 3))).thenReturn(Optional.of(existing));
 
         service.collectMonth(MARCH_2026);
@@ -113,5 +129,19 @@ class MarketIndexServiceTest {
         ArgumentCaptor<TaiexDailyBar> captor = ArgumentCaptor.forClass(TaiexDailyBar.class);
         verify(repository, times(1)).save(captor.capture());
         assertThat(captor.getValue().getClose()).isEqualTo(2030045L);
+    }
+
+    @Test
+    void collectMonth_mergesVolumeFromMarketStats() {
+        when(twseClient.fetchMonthJson(MARCH_2026)).thenReturn(ONE_BAR_JSON);
+        when(twseClient.fetchMarketStatsJson(MARCH_2026)).thenReturn(ONE_BAR_STATS_JSON);
+        when(repository.findByTradeDate(LocalDate.of(2026, 3, 3))).thenReturn(Optional.empty());
+
+        service.collectMonth(MARCH_2026);
+
+        ArgumentCaptor<TaiexDailyBar> captor = ArgumentCaptor.forClass(TaiexDailyBar.class);
+        verify(repository, times(1)).save(captor.capture());
+        assertThat(captor.getValue().getVolume()).isEqualTo(3456789L);
+        assertThat(captor.getValue().getTurnover()).isEqualTo(123456789012L);
     }
 }

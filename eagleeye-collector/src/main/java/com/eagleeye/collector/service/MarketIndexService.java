@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class MarketIndexService {
@@ -33,13 +34,23 @@ public class MarketIndexService {
     @Transactional
     public MarketIndexCollectionResult collectMonth(YearMonth yearMonth) {
         try {
-            String json = twseClient.fetchMonthJson(yearMonth);
-            List<TaiexDailyBar> bars = twseParser.parse(json);
+            String ohlcJson = twseClient.fetchMonthJson(yearMonth);
+            List<TaiexDailyBar> bars = twseParser.parse(ohlcJson);
 
             if (bars.isEmpty()) {
                 log.info("No TAIEX data for {} — skipping", yearMonth);
                 return MarketIndexCollectionResult.noData(yearMonth);
             }
+
+            String statsJson = twseClient.fetchMarketStatsJson(yearMonth);
+            Map<LocalDate, long[]> volumeByDate = twseParser.parseVolumeByDate(statsJson);
+            bars.forEach(bar -> {
+                long[] vt = volumeByDate.get(bar.getTradeDate());
+                if (vt != null) {
+                    bar.setVolume(vt[0]);
+                    bar.setTurnover(vt[1]);
+                }
+            });
 
             bars.forEach(this::upsert);
             log.info("Collected {} TAIEX bars for {}", bars.size(), yearMonth);

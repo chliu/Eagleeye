@@ -5,7 +5,9 @@ import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -71,11 +73,12 @@ class TwseParserTest {
     }
 
     @Test
-    void parse_validJson_firstBarHasCorrectVolumeAndTurnover() {
+    void parse_validJson_volumeAndTurnoverAreNull() {
+        // The TWSE /indicesReport/MI_5MINS_HIST endpoint does not provide volume/turnover
         List<TaiexDailyBar> bars = parser.parse(VALID_JSON);
         TaiexDailyBar bar = bars.get(0);
-        assertThat(bar.getVolume()).isEqualTo(3456789L);
-        assertThat(bar.getTurnover()).isEqualTo(123456789012L);
+        assertThat(bar.getVolume()).isNull();
+        assertThat(bar.getTurnover()).isNull();
     }
 
     @Test
@@ -88,6 +91,33 @@ class TwseParserTest {
     void parse_nonOkStat_returnsEmptyList() {
         List<TaiexDailyBar> bars = parser.parse(NO_OK_STAT_JSON);
         assertThat(bars).isEmpty();
+    }
+
+    private static final String MARKET_STATS_JSON = """
+            {
+              "stat": "OK",
+              "fields": ["日期","成交股數","成交金額","成交筆數","發行量加權股價指數","漲跌點數"],
+              "data": [
+                ["115/03/03", "3,456,789", "123,456,789,012", "1,234,567", "20,300.45", "65.89"],
+                ["115/03/04", "3,567,890", "124,567,890,123", "1,345,678", "20,488.22", "187.77"]
+              ]
+            }
+            """;
+
+    @Test
+    void parseVolumeByDate_validJson_returnsVolumeAndTurnoverByDate() {
+        Map<LocalDate, long[]> result = parser.parseVolumeByDate(MARKET_STATS_JSON);
+
+        assertThat(result).hasSize(2);
+        long[] mar3 = result.get(LocalDate.of(2026, 3, 3));
+        assertThat(mar3[0]).isEqualTo(3456789L);
+        assertThat(mar3[1]).isEqualTo(123456789012L);
+    }
+
+    @Test
+    void parseVolumeByDate_nonOkStat_returnsEmptyMap() {
+        Map<LocalDate, long[]> result = parser.parseVolumeByDate("{\"stat\":\"NO DATA\",\"data\":[]}");
+        assertThat(result).isEmpty();
     }
 
     @Test

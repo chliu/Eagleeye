@@ -2,8 +2,10 @@ package com.eagleeye.shell.formatter;
 
 import com.eagleeye.domain.entity.FuturesPosition;
 import com.eagleeye.domain.entity.OptionsPosition;
+import com.eagleeye.domain.entity.TaiexDailyBar;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,10 +34,13 @@ public class TableFormatter {
     private static final NumberFormat NF = NumberFormat.getNumberInstance(Locale.US);
 
     // Column widths (inner content, excluding │ padding)
-    private static final int W_CONTRACT = 10;
-    private static final int W_DATE     = 10;
-    private static final int W_TRADER   = 16;
-    private static final int W_NUM      = 11;  // e.g. "+132,293"
+    private static final int W_CONTRACT  = 10;
+    private static final int W_DATE      = 10;
+    private static final int W_TRADER    = 16;
+    private static final int W_NUM       = 11;  // e.g. "+132,293"
+    private static final int W_OHLC      = 12;  // e.g. "29,349.81"
+    private static final int W_VOLUME    = 14;  // e.g. "10,724,729,528"
+    private static final int W_TURNOVER  = 16;  // e.g. "669,781,989,470"
 
     // Box-drawing characters
     private static final char H  = '─';
@@ -78,6 +83,28 @@ public class TableFormatter {
             lastContract = contract;
         }
 
+        return renderTable(headers, widths, rows);
+    }
+
+    /** TAIEX daily bars over a date range. Columns: Date, Open, High, Low, Close, Volume, Turnover. */
+    public String formatMarketIndex(List<TaiexDailyBar> bars) {
+        if (bars.isEmpty()) return "No data found.";
+
+        int[] widths  = {W_DATE, W_OHLC, W_OHLC, W_OHLC, W_OHLC, W_VOLUME, W_TURNOVER};
+        String[] headers = {"Date", "Open", "High", "Low", "Close", "Volume", "Turnover"};
+
+        List<Row> rows = new ArrayList<>();
+        for (TaiexDailyBar b : bars) {
+            rows.add(Row.data(
+                    b.getTradeDate().toString(),
+                    fmtOhlc(b.getOpen()),
+                    fmtOhlc(b.getHigh()),
+                    fmtOhlc(b.getLow()),
+                    fmtOhlc(b.getClose()),
+                    fmtVol(b.getVolume()),
+                    fmtVol(b.getTurnover())
+            ));
+        }
         return renderTable(headers, widths, rows);
     }
 
@@ -193,6 +220,12 @@ public class TableFormatter {
     // -----------------------------------------------------------------------
     // Number formatting
     // -----------------------------------------------------------------------
+
+    private String fmtOhlc(Long v) {
+        if (v == null) return "-";
+        BigDecimal decimal = BigDecimal.valueOf(v).movePointLeft(2);
+        return NF.format(decimal);
+    }
 
     private String fmtVol(Long v) {
         return v == null ? "-" : NF.format(v);

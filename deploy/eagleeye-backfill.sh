@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# One-shot backfill runner
-# Usage: eagleeye-backfill --from 2026-01-01 --to 2026-03-15
+# One-shot backfill runner — collects TAIEX market index + TAIFEX institutional data
+# Usage: eagleeye-backfill --from 2026-01-01 [--to 2026-03-18]
+
+set -euo pipefail
 
 FROM=""
 TO=""
@@ -20,10 +22,11 @@ fi
 
 TO="${TO:-$(date +%Y-%m-%d)}"
 
-echo "Backfilling $FROM → $TO ..."
-exec java -jar /opt/eagleeye/collector/eagleeye-collector.jar \
-     --spring.profiles.active=prod \
-     --backfill.from="$FROM" \
-     --backfill.to="$TO" \
-     --logging.level.root=WARN \
-     --logging.level.com.eagleeye=INFO
+JAVA="java --enable-native-access=ALL-UNNAMED"
+JAR="/opt/eagleeye/collector/eagleeye-collector.jar"
+COMMON_ARGS="--spring.profiles.active=prod --logging.level.root=WARN --logging.level.com.eagleeye=INFO"
+
+echo "=== Backfilling $FROM → $TO ==="
+$JAVA -jar "$JAR" $COMMON_ARGS \
+    --combined.backfill.from="$FROM" \
+    --combined.backfill.to="$TO"
