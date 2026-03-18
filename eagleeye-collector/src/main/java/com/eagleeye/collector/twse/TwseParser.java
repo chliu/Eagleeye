@@ -1,0 +1,120 @@
+package com.eagleeye.collector.twse;
+
+import com.eagleeye.domain.entity.TaiexDailyBar;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Parses TWSE TAIEX monthly JSON into TaiexDailyBar entities.
+ *
+ * Column order (positional):
+ *   [0] Date (ROC calendar "YYY/MM/DD")
+ *   [1] Open, [2] High, [3] Low, [4] Close  (fractional, comma-separated)
+ *   [5] Volume (integer, comma-separated)
+ *   [6] Turnover (integer, comma-separated)
+ *
+ * OHLC values are stored as fixed-point integers (×100):
+ *   "20,234.56" → strip commas → BigDecimal("20234.56") × 100 → 2023456L
+ */
+@Component
+public class TwseParser {
+
+    private static final Logger log = LoggerFactory.getLogger(TwseParser.class);
+    private final ObjectMapper objectMapper;
+
+    public TwseParser(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
+    public List<TaiexDailyBar> parse(String json) {
+        JsonNode root;
+        try {
+            root = objectMapper.readTree(json);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Failed to parse TWSE JSON: " + truncate(json), e);
+        }
+
+        String stat = root.path("stat").asText("");
+        if (!"OK".equals(stat)) {
+            log.info("TWSE stat='{}' — no data", stat);
+            return List.of();
+        }
+
+        JsonNode dataNode = root.path("data");
+        if (!dataNode.isArray() || dataNode.isEmpty()) {
+            log.info("TWSE data array is empty");
+            return List.of();
+        }
+
+        List<TaiexDailyBar> bars = new ArrayList<>();
+        for (JsonNode row : dataNode) {
+            TaiexDailyBar bar = parseRow(row);
+            if (bar != null) bars.add(bar);
+        }
+
+        log.info("Parsed {} TAIEX bars", bars.size());
+        return bars;
+    }
+
+    private TaiexDailyBar parseRow(JsonNode row) {
+        try {
+            LocalDate tradeDate = parseRocDate(row.get(0).asText());
+            TaiexDailyBar bar = new TaiexDailyBar(tradeDate);
+            bar.setOpen(toFixedPoint(row.get(1).asText()));
+            bar.setHigh(toFixedPoint(row.get(2).asText()));
+            bar.setLow(toFixedPoint(row.get(3).asText()));
+            bar.setClose(toFixedPoint(row.get(4).asText()));
+            bar.setVolume(toLong(row.get(5).asText()));
+            bar.setTurnover(toLong(row.get(6).asText()));
+            return bar;
+        } catch (Exception e) {
+            log.warn("Skipping unparseable row {}: {}", row, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Parses Republic of China calendar date string "YYY/MM/DD" to LocalDate.
+     * ROC year 115 = 2026 (115 + 1911 = 2026).
+     */
+    private LocalDate parseRocDate(String rocDate) {
+        String[] parts = rocDate.split("/");
+        if (parts.length != 3) {
+            throw new IllegalArgumentException("Unexpected ROC date format: " + rocDate);
+        }
+        int year = Integer.parseInt(parts[0]) + 1911;
+        int month = Integer.parseInt(parts[1]);
+        int day = Integer.parseInt(parts[2]);
+        return LocalDate.of(year, month, day);
+    }
+
+    /**
+     * Converts a comma-formatted fractional string to a fixed-point Long (×100).
+     * "20,234.56" → 2023456L
+     */
+    private long toFixedPoint(String value) {
+        String clean = value.replace(",", "");
+        return new BigDecimal(clean).multiply(new BigDecimal("100")).longValueExact();
+    }
+
+    /**
+     * Converts a comma-formatted integer string to Long.
+     * "3,456,789" → 3456789L
+     */
+    private long toLong(String value) {
+        return Long.parseLong(value.replace(",", ""));
+    }
+
+    private String truncate(String s) {
+        if (s == null) return "<null>";
+        return s.length() > 80 ? s.substring(0, 80) + "..." : s;
+    }
+}
