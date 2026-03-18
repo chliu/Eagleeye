@@ -1,5 +1,6 @@
 package com.eagleeye.collector.twse;
 
+import com.eagleeye.domain.entity.MarginDailyBar;
 import com.eagleeye.domain.entity.TaiexDailyBar;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -125,6 +126,53 @@ class TwseParserTest {
         assertThatThrownBy(() -> parser.parse("not valid json {{{"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("not valid json");
+    }
+
+    // ── parseMargin ─────────────────────────────────────────────────────────────
+
+    private static final String MARGIN_JSON = """
+            {
+              "stat": "OK",
+              "data": [
+                ["Margin Purchase (Trading unit)", "526,296", "485,038", "6,678", "8,074,444", "8,109,024"],
+                ["Short Sale (Trading unit)", "31,407", "23,277", "1,999", "215,077", "204,948"]
+              ]
+            }
+            """;
+
+    @Test
+    void parseMargin_validJson_returnsBarWithAllFields() {
+        LocalDate date = LocalDate.of(2026, 3, 18);
+        MarginDailyBar bar = parser.parseMargin(MARGIN_JSON, date);
+
+        assertThat(bar).isNotNull();
+        assertThat(bar.getTradeDate()).isEqualTo(date);
+        assertThat(bar.getMarginPurchase()).isEqualTo(526_296L);
+        assertThat(bar.getMarginSale()).isEqualTo(485_038L);
+        assertThat(bar.getMarginCashRedemption()).isEqualTo(6_678L);
+        assertThat(bar.getMarginPrevBalance()).isEqualTo(8_074_444L);
+        assertThat(bar.getMarginBalance()).isEqualTo(8_109_024L);
+        assertThat(bar.getShortCovering()).isEqualTo(31_407L);
+        assertThat(bar.getShortSale()).isEqualTo(23_277L);
+        assertThat(bar.getShortStockRedemption()).isEqualTo(1_999L);
+        assertThat(bar.getShortPrevBalance()).isEqualTo(215_077L);
+        assertThat(bar.getShortBalance()).isEqualTo(204_948L);
+    }
+
+    @Test
+    void parseMargin_statNotOk_returnsNull() {
+        assertThat(parser.parseMargin("{\"stat\":\"NO DATA\",\"data\":[]}", LocalDate.of(2026, 3, 18))).isNull();
+    }
+
+    @Test
+    void parseMargin_missingRows_returnsNull() {
+        String json = "{\"stat\":\"OK\",\"data\":[[\"only one row\",\"1\",\"2\",\"3\",\"4\",\"5\"]]}";
+        assertThat(parser.parseMargin(json, LocalDate.of(2026, 3, 18))).isNull();
+    }
+
+    @Test
+    void parseMargin_invalidJson_returnsNull() {
+        assertThat(parser.parseMargin("not-json", LocalDate.of(2026, 3, 18))).isNull();
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.eagleeye.collector.twse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 
@@ -20,6 +21,7 @@ public class TwseClient {
     private static final String BASE_URL = "https://www.twse.com.tw";
     private static final String TAIEX_PATH = "/indicesReport/MI_5MINS_HIST";
     private static final String MARKET_STATS_PATH = "/rwd/zh/afterTrading/FMTQIK";
+    private static final String MARGIN_PATH        = "/rwd/en/marginTrading/MI_MARGN";
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private final RestClient restClient;
@@ -37,6 +39,19 @@ public class TwseClient {
                 .uri(uriBuilder -> uriBuilder
                         .path(TAIEX_PATH)
                         .queryParam("date", queryDate)
+                        .queryParam("response", "json")
+                        .build())
+                .retrieve()
+                .body(String.class);
+    }
+
+    public String fetchMarginJson(LocalDate date) {
+        String queryDate = date.format(DATE_FORMAT);
+        return restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path(MARGIN_PATH)
+                        .queryParam("date", queryDate)
+                        .queryParam("selectType", "MS")
                         .queryParam("response", "json")
                         .build())
                 .retrieve()

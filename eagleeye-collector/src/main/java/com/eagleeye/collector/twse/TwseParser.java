@@ -1,5 +1,6 @@
 package com.eagleeye.collector.twse;
 
+import com.eagleeye.domain.entity.MarginDailyBar;
 import com.eagleeye.domain.entity.TaiexDailyBar;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -117,6 +118,55 @@ public class TwseParser {
             }
         }
         return result;
+    }
+
+    /**
+     * Parses MI_MARGN market-wide margin transaction JSON for a single date.
+     *
+     * Row 0 = Margin Purchase (融資): cols [1-5]
+     * Row 1 = Short Sale (融券):     cols [1-5]
+     * All values are plain trading units (lots/張) — no fixed-point conversion.
+     */
+    public MarginDailyBar parseMargin(String json, LocalDate date) {
+        JsonNode root;
+        try {
+            root = objectMapper.readTree(json);
+        } catch (Exception e) {
+            log.warn("Failed to parse margin JSON: {}", truncate(json));
+            return null;
+        }
+
+        if (!"OK".equals(root.path("stat").asText(""))) {
+            log.info("Margin stat='{}' — no data for {}", root.path("stat").asText(""), date);
+            return null;
+        }
+
+        JsonNode data = root.path("data");
+        if (!data.isArray() || data.size() < 2) {
+            log.info("Margin data missing or incomplete for {}", date);
+            return null;
+        }
+
+        try {
+            JsonNode marginRow = data.get(0);
+            JsonNode shortRow  = data.get(1);
+
+            MarginDailyBar bar = new MarginDailyBar(date);
+            bar.setMarginPurchase(toLong(marginRow.get(1).asText()));
+            bar.setMarginSale(toLong(marginRow.get(2).asText()));
+            bar.setMarginCashRedemption(toLong(marginRow.get(3).asText()));
+            bar.setMarginPrevBalance(toLong(marginRow.get(4).asText()));
+            bar.setMarginBalance(toLong(marginRow.get(5).asText()));
+            bar.setShortCovering(toLong(shortRow.get(1).asText()));
+            bar.setShortSale(toLong(shortRow.get(2).asText()));
+            bar.setShortStockRedemption(toLong(shortRow.get(3).asText()));
+            bar.setShortPrevBalance(toLong(shortRow.get(4).asText()));
+            bar.setShortBalance(toLong(shortRow.get(5).asText()));
+            return bar;
+        } catch (Exception e) {
+            log.warn("Failed to parse margin data rows for {}: {}", date, e.getMessage());
+            return null;
+        }
     }
 
     /**
