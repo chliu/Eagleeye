@@ -17,7 +17,7 @@ class InstitutionalFlowTest {
     }
 
     @Test
-    void setters_storeAllNineFields() {
+    void setters_storeAllFields() {
         InstitutionalFlow flow = new InstitutionalFlow(DATE);
         flow.setForeignBuy(100_000_000_000L);
         flow.setForeignSell(80_000_000_000L);
