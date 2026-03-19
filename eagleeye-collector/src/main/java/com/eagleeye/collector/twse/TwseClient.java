@@ -22,6 +22,7 @@ public class TwseClient {
     private static final String TAIEX_PATH = "/indicesReport/MI_5MINS_HIST";
     private static final String MARKET_STATS_PATH = "/rwd/zh/afterTrading/FMTQIK";
     private static final String MARGIN_PATH        = "/rwd/en/marginTrading/MI_MARGN";
+    private static final String INSTITUTIONAL_FLOW_PATH = "/rwd/en/fund/BFI82U";
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private final RestClient restClient;
@@ -52,6 +53,19 @@ public class TwseClient {
                         .path(MARGIN_PATH)
                         .queryParam("date", queryDate)
                         .queryParam("selectType", "MS")
+                        .queryParam("response", "json")
+                        .build())
+                .retrieve()
+                .body(String.class);
+    }
+
+    public String fetchInstitutionalFlowJson(LocalDate date) {
+        String queryDate = date.format(DATE_FORMAT);
+        return restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path(INSTITUTIONAL_FLOW_PATH)
+                        .queryParam("type", "day")
+                        .queryParam("dayDate", queryDate)
                         .queryParam("response", "json")
                         .build())
                 .retrieve()

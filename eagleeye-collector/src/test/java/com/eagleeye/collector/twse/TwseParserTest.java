@@ -1,5 +1,6 @@
 package com.eagleeye.collector.twse;
 
+import com.eagleeye.domain.entity.InstitutionalFlow;
 import com.eagleeye.domain.entity.MarginDailyBar;
 import com.eagleeye.domain.entity.TaiexDailyBar;
 import tools.jackson.databind.ObjectMapper;
@@ -180,6 +181,63 @@ class TwseParserTest {
     @Test
     void parseMargin_invalidJson_returnsNull() {
         assertThat(parser.parseMargin("not-json", LocalDate.of(2026, 3, 18))).isNull();
+    }
+
+    // ── parseInstitutionalFlow ────────────────────────────────────────────────
+
+    private static final String FLOW_JSON = """
+            {
+              "stat": "OK",
+              "tables": [
+                {
+                  "data": [
+                    ["Foreign Investors", "100,000,000,000", "80,000,000,000", "20,000,000,000"],
+                    ["Investment Trust",   "5,000,000,000",  "4,000,000,000",  "1,000,000,000"],
+                    ["Dealers",            "3,000,000,000",  "2,500,000,000",    "500,000,000"]
+                  ]
+                }
+              ]
+            }
+            """;
+
+    private static final LocalDate FLOW_DATE = LocalDate.of(2026, 3, 19);
+
+    @Test
+    void parseInstitutionalFlow_success_returnsAllNineFields() {
+        InstitutionalFlow flow = parser.parseInstitutionalFlow(FLOW_JSON, FLOW_DATE);
+
+        assertThat(flow).isNotNull();
+        assertThat(flow.getTradeDate()).isEqualTo(FLOW_DATE);
+        assertThat(flow.getForeignBuy()).isEqualTo(100_000_000_000L);
+        assertThat(flow.getForeignSell()).isEqualTo(80_000_000_000L);
+        assertThat(flow.getForeignNet()).isEqualTo(20_000_000_000L);
+        assertThat(flow.getInvestmentTrustBuy()).isEqualTo(5_000_000_000L);
+        assertThat(flow.getInvestmentTrustSell()).isEqualTo(4_000_000_000L);
+        assertThat(flow.getInvestmentTrustNet()).isEqualTo(1_000_000_000L);
+        assertThat(flow.getDealerBuy()).isEqualTo(3_000_000_000L);
+        assertThat(flow.getDealerSell()).isEqualTo(2_500_000_000L);
+        assertThat(flow.getDealerNet()).isEqualTo(500_000_000L);
+    }
+
+    @Test
+    void parseInstitutionalFlow_statNotOk_returnsNull() {
+        String json = """
+                {"stat": "NO DATA", "tables": [{"data": []}]}
+                """;
+        assertThat(parser.parseInstitutionalFlow(json, FLOW_DATE)).isNull();
+    }
+
+    @Test
+    void parseInstitutionalFlow_emptyData_returnsNull() {
+        String json = """
+                {"stat": "OK", "tables": [{"data": []}]}
+                """;
+        assertThat(parser.parseInstitutionalFlow(json, FLOW_DATE)).isNull();
+    }
+
+    @Test
+    void parseInstitutionalFlow_invalidJson_returnsNull() {
+        assertThat(parser.parseInstitutionalFlow("not-json", FLOW_DATE)).isNull();
     }
 
     @Test
