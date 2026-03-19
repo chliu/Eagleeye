@@ -2,6 +2,8 @@ package com.eagleeye.collector.runner;
 
 import com.eagleeye.collector.service.CollectionResult;
 import com.eagleeye.collector.service.CollectionService;
+import com.eagleeye.collector.service.InstitutionalFlowResult;
+import com.eagleeye.collector.service.InstitutionalFlowService;
 import com.eagleeye.collector.service.MarginCollectionResult;
 import com.eagleeye.collector.service.MarginTransactionService;
 import com.eagleeye.collector.service.MarketIndexCollectionResult;
@@ -45,6 +47,7 @@ public class CombinedBackfillRunner implements ApplicationRunner {
     private final MarketIndexService marketIndexService;
     private final CollectionService collectionService;
     private final MarginTransactionService marginTransactionService;
+    private final InstitutionalFlowService institutionalFlowService;
     private final ApplicationContext applicationContext;
     private final long requestDelayMs;
 
@@ -52,18 +55,22 @@ public class CombinedBackfillRunner implements ApplicationRunner {
     public CombinedBackfillRunner(MarketIndexService marketIndexService,
                                   CollectionService collectionService,
                                   ApplicationContext applicationContext,
-                                  MarginTransactionService marginTransactionService) {
-        this(marketIndexService, collectionService, applicationContext, marginTransactionService, 500);
+                                  MarginTransactionService marginTransactionService,
+                                  InstitutionalFlowService institutionalFlowService) {
+        this(marketIndexService, collectionService, applicationContext,
+                marginTransactionService, institutionalFlowService, 500);
     }
 
     CombinedBackfillRunner(MarketIndexService marketIndexService,
                            CollectionService collectionService,
                            ApplicationContext applicationContext,
                            MarginTransactionService marginTransactionService,
+                           InstitutionalFlowService institutionalFlowService,
                            long requestDelayMs) {
         this.marketIndexService = marketIndexService;
         this.collectionService = collectionService;
         this.marginTransactionService = marginTransactionService;
+        this.institutionalFlowService = institutionalFlowService;
         this.applicationContext = applicationContext;
         this.requestDelayMs = requestDelayMs;
     }
@@ -111,6 +118,10 @@ public class CombinedBackfillRunner implements ApplicationRunner {
                     MarginCollectionResult marginResult = marginTransactionService.collectDate(day);
                     printMargin(day, marginResult);
                     Thread.sleep(requestDelayMs);
+
+                    InstitutionalFlowResult flowResult = institutionalFlowService.collectDate(day);
+                    printInstitutionalFlow(day, flowResult);
+                    Thread.sleep(requestDelayMs);
                 }
                 day = day.plusDays(1);
             }
@@ -145,5 +156,14 @@ public class CombinedBackfillRunner implements ApplicationRunner {
             case ERROR     -> "ERROR: " + r.errorMessage();
         };
         System.out.printf("  [MARGIN]  %-12s  %s%n", date, status);
+    }
+
+    private void printInstitutionalFlow(LocalDate date, InstitutionalFlowResult r) {
+        String status = switch (r.status()) {
+            case COLLECTED -> "collected";
+            case NO_DATA   -> "no data";
+            case ERROR     -> "ERROR: " + r.errorMessage();
+        };
+        System.out.printf("  [IFLOW]   %-12s  %s%n", date, status);
     }
 }
