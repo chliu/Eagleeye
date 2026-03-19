@@ -197,7 +197,7 @@ public class TwseParser {
 
         String stat = root.path("stat").asText("");
         if (!"OK".equals(stat)) {
-            log.info("Institutional flow stat='{}' — no data for {}", stat, date);
+            log.info("Institutional flow stat='{}' — no data for {} (raw: {})", stat, date, truncate(json));
             return null;
         }
 
@@ -230,6 +230,11 @@ public class TwseParser {
                     flow.setDealerSell(sell);
                     flow.setDealerNet(net);
                 }
+            }
+            if (flow.getForeignBuy() == null || flow.getInvestmentTrustBuy() == null || flow.getDealerBuy() == null) {
+                log.warn("Institutional flow data incomplete for {} — missing one or more investor groups", date);
+                log.debug("Institutional flow raw data: {}", data);
+                return null;
             }
             return flow;
         } catch (Exception e) {

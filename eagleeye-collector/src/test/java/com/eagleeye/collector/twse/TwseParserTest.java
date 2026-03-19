@@ -241,6 +241,23 @@ class TwseParserTest {
     }
 
     @Test
+    void parseInstitutionalFlow_missingInvestorGroup_returnsNull() {
+        String json = """
+                {
+                  "stat": "OK",
+                  "tables": [
+                    {
+                      "data": [
+                        ["Foreign Investors", "100,000,000,000", "80,000,000,000", "20,000,000,000"]
+                      ]
+                    }
+                  ]
+                }
+                """;
+        assertThat(parser.parseInstitutionalFlow(json, FLOW_DATE)).isNull();
+    }
+
+    @Test
     void parse_oneValidOneInvalidRow_returnsOnlyValidBar() {
         String mixedJson = """
                 {

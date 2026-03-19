@@ -32,6 +32,8 @@ public class InstitutionalFlowService {
     public InstitutionalFlowResult collectDate(LocalDate date) {
         try {
             String json = twseClient.fetchInstitutionalFlowJson(date);
+            log.debug("Institutional flow raw JSON for {}: {}", date,
+                    json != null && json.length() > 300 ? json.substring(0, 300) + "..." : json);
             InstitutionalFlow parsed = twseParser.parseInstitutionalFlow(json, date);
             if (parsed == null) {
                 log.info("No institutional flow data for {}", date);
