@@ -8,7 +8,7 @@
 
 ## Overview
 
-Collect daily **trading value (NTD)** by institutional investor type from the TWSE BFI82U endpoint. Store totals for three investor types (Foreign Investors, Investment Trust, Dealers) with buy/sell/net values — 9 fields total per trading date. Integrated into the existing combined daily collection schedule at 15:30 Taiwan time.
+Collect daily **trading value (NTD)** by institutional investor type from the TWSE BFI82U endpoint. Store totals for three investor types (Foreign Investors, Investment Trust, Dealers) with buy/sell/net values — 9 fields total per trading date. Collected daily at 15:30 Taiwan time via a standalone scheduler bean, following the same pattern as `MarginTransactionScheduler`. The combined backfill runner is also extended to collect institutional flow per weekday.
 
 **Source:** `GET https://www.twse.com.tw/rwd/en/fund/BFI82U?type=day&dayDate=YYYYMMDD&response=json`
 
@@ -108,12 +108,16 @@ public class InstitutionalFlowService {
 
 ### Scheduler: `InstitutionalFlowScheduler`
 
+Standalone bean — does **not** modify `CollectionScheduler` or `MarginTransactionScheduler`. Mirrors `MarginTransactionScheduler` exactly.
+
 ```java
 @Component
 public class InstitutionalFlowScheduler {
+    private static final ZoneId TAIPEI = ZoneId.of("Asia/Taipei");
+
     @Scheduled(cron = "0 30 15 * * MON-FRI", zone = "Asia/Taipei")
     public void collect() {
-        service.collectDate(LocalDate.now());
+        service.collectDate(LocalDate.now(TAIPEI));
     }
 }
 ```
@@ -121,7 +125,9 @@ public class InstitutionalFlowScheduler {
 ### Combined Backfill Runner: `CombinedBackfillRunner`
 
 - Add `InstitutionalFlowService` as 5th dependency (after `MarginTransactionService`)
-- `@Autowired` constructor: 5 args; package-private test constructor: 6 args (+ `requestDelayMs`)
+- `@Autowired` constructor (5 args): `(MarketIndexService, CollectionService, ApplicationContext, MarginTransactionService, InstitutionalFlowService)`
+- Package-private test constructor (6 args): `(MarketIndexService, CollectionService, ApplicationContext, MarginTransactionService, InstitutionalFlowService, long requestDelayMs)`
+- `InstitutionalFlowService` is last before `requestDelayMs` — preserves the `null` position of `ApplicationContext` in existing `CombinedBackfillRunnerTest` calls
 - In weekday loop: call `institutionalFlowService.collectDate(day)` after margin, with `Thread.sleep(requestDelayMs)`
 - Add `printInstitutionalFlow(LocalDate, InstitutionalFlowResult)` helper
 
@@ -133,9 +139,25 @@ public class InstitutionalFlowScheduler {
 
 Add `formatInstitutionalFlow(List<InstitutionalFlow> flows)`:
 - Columns: `Date | F-Buy | F-Sell | F-Net | IT-Buy | IT-Sell | IT-Net | D-Buy | D-Sell | D-Net`
-- New width constant: `W_FLOW = 14` (accommodates large NTD values, e.g. `"123,456,789,012"`)
-- Numbers right-aligned, comma-formatted via existing `fmtVol()`
+- New width constant: `W_FLOW = 17` (accommodates large NTD values up to `"123,456,789,012"` = 15 chars, plus sign prefix on net columns via `fmtNet()`)
+- Buy/sell columns formatted with `fmtVol()`, net columns with `fmtNet()` (adds `+` prefix)
 - Returns `"No data found."` for empty list
+
+**`TableFormatter` engine fix — `numTextCols` parameter:**
+
+The existing `dataLine()` hard-codes `i < 2` to left-align the first two columns. This is correct for position tables (Contract + Trader) but wrong for single-date tables (Date only). Update both `renderTable` and `dataLine` to accept a `numTextCols` int:
+
+```java
+private String renderTable(String[] headers, int[] widths, List<Row> rows, int numTextCols)
+private String dataLine(String[] cells, int[] widths, int numTextCols)
+```
+
+`renderTable` passes `numTextCols` through to each `dataLine` call. `dataLine` replaces the hard-coded `i < 2` with `i < numTextCols`.
+
+- `formatPositions` / `formatTrend` pass `numTextCols = 2` (Contract/Date + Trader)
+- `formatMarketIndex`, `formatMarginTransaction`, `formatInstitutionalFlow` pass `numTextCols = 1` (Date only)
+
+This is a minor engine fix applied while adding the new method. No visible impact on existing tests since alignment is not currently asserted.
 
 ### Commands: `InstitutionalFlowCommands`
 
@@ -161,7 +183,7 @@ All layers follow TDD (Red-Green-Refactor):
 
 | Test | Type | Location |
 |------|------|----------|
-| `InstitutionalFlowTest` | Unit | `eagleeye-domain` |
+| `InstitutionalFlowTest` | Unit — `constructor_setsTradeDate()` + `setters_storeAllNineFields()` (all 9 fields asserted) | `eagleeye-domain` |
 | `InstitutionalFlowRepositoryIT` | Integration (@SpringBootTest + H2) | `eagleeye-collector` |
 | `TwseParserTest` (extended) | Unit | `eagleeye-collector` |
 | `InstitutionalFlowServiceTest` | Unit (Mockito) | `eagleeye-collector` |
