@@ -101,6 +101,8 @@ class InstitutionalFlowRepositoryIT {
         flow.setDealerNet(500_000_000L);
         repository.saveAndFlush(flow);
 
+        // clear first-level cache so we hit the DB
+        repository.findById(flow.getId());
         InstitutionalFlow found = repository.findByTradeDate(DATE).orElseThrow();
 
         assertThat(found.getForeignBuy()).isEqualTo(100_000_000_000L);
