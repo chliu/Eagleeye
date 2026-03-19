@@ -167,6 +167,8 @@ class CombinedBackfillRunnerTest {
 
         verify(institutionalFlowService, times(4)).collectDate(any(LocalDate.class));
         verify(institutionalFlowService).collectDate(LocalDate.of(2026, 3, 3));
+        verify(institutionalFlowService).collectDate(LocalDate.of(2026, 3, 4));
+        verify(institutionalFlowService).collectDate(LocalDate.of(2026, 3, 5));
         verify(institutionalFlowService).collectDate(LocalDate.of(2026, 3, 6));
     }
 
