@@ -37,9 +37,16 @@ class MarginTransactionServiceIT {
     private static final String MARGIN_JSON = """
             {
               "stat": "OK",
-              "data": [
-                ["融資合計", "526,296", "485,038", "6,678", "8,074,444", "8,109,024"],
-                ["融券合計", "31,407", "23,277", "1,999", "215,077", "204,948"]
+              "date": "20260313",
+              "tables": [
+                {
+                  "title": "2026/03/13 Margin transaction summary",
+                  "fields": ["Item","Margin Purchase/ Short Covering","Margin Sale/Short Sale","Cash Redemption/ Stock Redemption","Balance of Previous Day","Balance of the Day"],
+                  "data": [
+                    ["Margin Purchase (Trading unit)", "526,296", "485,038", "6,678", "8,074,444", "8,109,024"],
+                    ["Short Sale (Trading unit)", "31,407", "23,277", "1,999", "215,077", "204,948"]
+                  ]
+                }
               ]
             }
             """;
@@ -83,9 +90,13 @@ class MarginTransactionServiceIT {
         String updatedJson = """
                 {
                   "stat": "OK",
-                  "data": [
-                    ["融資合計", "600,000", "500,000", "7,000", "9,000,000", "9,100,000"],
-                    ["融券合計", "40,000", "30,000", "2,000", "220,000", "230,000"]
+                  "tables": [
+                    {
+                      "data": [
+                        ["Margin Purchase (Trading unit)", "600,000", "500,000", "7,000", "9,000,000", "9,100,000"],
+                        ["Short Sale (Trading unit)", "40,000", "30,000", "2,000", "220,000", "230,000"]
+                      ]
+                    }
                   ]
                 }
                 """;

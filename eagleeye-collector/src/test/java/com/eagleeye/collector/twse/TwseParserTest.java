@@ -133,9 +133,16 @@ class TwseParserTest {
     private static final String MARGIN_JSON = """
             {
               "stat": "OK",
-              "data": [
-                ["Margin Purchase (Trading unit)", "526,296", "485,038", "6,678", "8,074,444", "8,109,024"],
-                ["Short Sale (Trading unit)", "31,407", "23,277", "1,999", "215,077", "204,948"]
+              "date": "20260313",
+              "tables": [
+                {
+                  "title": "2026/03/13 Margin transaction summary",
+                  "fields": ["Item","Margin Purchase/ Short Covering","Margin Sale/Short Sale","Cash Redemption/ Stock Redemption","Balance of Previous Day","Balance of the Day"],
+                  "data": [
+                    ["Margin Purchase (Trading unit)", "526,296", "485,038", "6,678", "8,074,444", "8,109,024"],
+                    ["Short Sale (Trading unit)", "31,407", "23,277", "1,999", "215,077", "204,948"]
+                  ]
+                }
               ]
             }
             """;
@@ -161,12 +168,12 @@ class TwseParserTest {
 
     @Test
     void parseMargin_statNotOk_returnsNull() {
-        assertThat(parser.parseMargin("{\"stat\":\"NO DATA\",\"data\":[]}", LocalDate.of(2026, 3, 18))).isNull();
+        assertThat(parser.parseMargin("{\"stat\":\"Search date greater than today, please retry!\"}", LocalDate.of(2026, 3, 18))).isNull();
     }
 
     @Test
     void parseMargin_missingRows_returnsNull() {
-        String json = "{\"stat\":\"OK\",\"data\":[[\"only one row\",\"1\",\"2\",\"3\",\"4\",\"5\"]]}";
+        String json = "{\"stat\":\"OK\",\"tables\":[{\"data\":[[\"only one row\",\"1\",\"2\",\"3\",\"4\",\"5\"]]}]}";
         assertThat(parser.parseMargin(json, LocalDate.of(2026, 3, 18))).isNull();
     }
 

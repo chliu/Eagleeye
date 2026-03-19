@@ -32,6 +32,8 @@ public class MarginTransactionService {
     public MarginCollectionResult collectDate(LocalDate date) {
         try {
             String json = twseClient.fetchMarginJson(date);
+            log.debug("Margin raw JSON for {}: {}", date,
+                    json != null && json.length() > 300 ? json.substring(0, 300) + "..." : json);
             MarginDailyBar parsed = twseParser.parseMargin(json, date);
             if (parsed == null) {
                 log.info("No margin data for {}", date);

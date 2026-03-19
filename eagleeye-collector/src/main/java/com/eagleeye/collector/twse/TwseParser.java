@@ -136,17 +136,24 @@ public class TwseParser {
             return null;
         }
 
-        if (!"OK".equals(root.path("stat").asText(""))) {
-            log.info("Margin stat='{}' — no data for {}", root.path("stat").asText(""), date);
+        String stat = root.path("stat").asText("");
+        if (!"OK".equals(stat)) {
+            log.info("Margin stat='{}' — no data for {} (raw: {})", stat, date, truncate(json));
             return null;
         }
 
-        JsonNode data = root.path("data");
+        JsonNode tables = root.path("tables");
+        JsonNode data = (tables.isArray() && !tables.isEmpty())
+                ? tables.get(0).path("data")
+                : root.path("data");   // fallback for backward compatibility
         if (!data.isArray() || data.size() < 2) {
-            log.info("Margin data missing or incomplete for {}", date);
+            log.info("Margin data missing or incomplete for {} — {} rows (raw: {})",
+                    date, data.size(), truncate(json));
             return null;
         }
 
+        log.debug("Margin raw row[0]: {}", data.get(0));
+        log.debug("Margin raw row[1]: {}", data.get(1));
         try {
             JsonNode marginRow = data.get(0);
             JsonNode shortRow  = data.get(1);
