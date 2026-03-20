@@ -2,8 +2,8 @@ package com.eagleeye.shell.commands;
 
 import com.eagleeye.collector.service.MarginCollectionResult;
 import com.eagleeye.collector.service.MarginTransactionService;
-import com.eagleeye.domain.entity.MarginDailyBar;
-import com.eagleeye.domain.repository.MarginDailyBarRepository;
+import com.eagleeye.domain.entity.MarginTransaction;
+import com.eagleeye.domain.repository.MarginTransactionRepository;
 import com.eagleeye.shell.formatter.TableFormatter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
 class MarginTransactionCommandsTest {
 
     @Mock private MarginTransactionService marginTransactionService;
-    @Mock private MarginDailyBarRepository repository;
+    @Mock private MarginTransactionRepository repository;
     @Mock private TableFormatter formatter;
 
     private MarginTransactionCommands commands;
@@ -51,7 +51,7 @@ class MarginTransactionCommandsTest {
 
     @Test
     void list_barFound_returnsFormattedTable() {
-        MarginDailyBar bar = new MarginDailyBar(LocalDate.of(2026, 3, 18));
+        MarginTransaction bar = new MarginTransaction(LocalDate.of(2026, 3, 18));
         when(repository.findByTradeDate(LocalDate.of(2026, 3, 18))).thenReturn(Optional.of(bar));
         when(formatter.formatMarginTransaction(List.of(bar))).thenReturn("rendered");
 
@@ -92,7 +92,7 @@ class MarginTransactionCommandsTest {
 
     @Test
     void show_returnsFormattedTableWithRowCount() {
-        MarginDailyBar bar = new MarginDailyBar(LocalDate.of(2026, 3, 18));
+        MarginTransaction bar = new MarginTransaction(LocalDate.of(2026, 3, 18));
         when(repository.findByTradeDateBetweenOrderByTradeDateAsc(any(), any())).thenReturn(List.of(bar));
         when(formatter.formatMarginTransaction(List.of(bar))).thenReturn("rendered-table");
 

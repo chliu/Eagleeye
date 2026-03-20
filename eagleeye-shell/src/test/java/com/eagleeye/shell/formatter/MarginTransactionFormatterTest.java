@@ -1,6 +1,6 @@
 package com.eagleeye.shell.formatter;
 
-import com.eagleeye.domain.entity.MarginDailyBar;
+import com.eagleeye.domain.entity.MarginTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -18,8 +18,8 @@ class MarginTransactionFormatterTest {
         formatter = new TableFormatter();
     }
 
-    private MarginDailyBar bar(String date) {
-        MarginDailyBar b = new MarginDailyBar(LocalDate.parse(date));
+    private MarginTransaction bar(String date) {
+        MarginTransaction b = new MarginTransaction(LocalDate.parse(date));
         b.setMarginPurchase(526_296L);
         b.setMarginSale(485_038L);
         b.setMarginCashRedemption(6_678L);
@@ -66,7 +66,7 @@ class MarginTransactionFormatterTest {
 
     @Test
     void formatMarginTransaction_nullFields_renderedAsDash() {
-        MarginDailyBar b = new MarginDailyBar(LocalDate.parse("2026-03-18"));
+        MarginTransaction b = new MarginTransaction(LocalDate.parse("2026-03-18"));
         // leave all fields null
         String result = formatter.formatMarginTransaction(List.of(b));
         assertThat(result).contains("-");
@@ -74,7 +74,7 @@ class MarginTransactionFormatterTest {
 
     @Test
     void formatMarginTransaction_multipleBars_allDatesPresent() {
-        List<MarginDailyBar> bars = List.of(bar("2026-03-17"), bar("2026-03-18"));
+        List<MarginTransaction> bars = List.of(bar("2026-03-17"), bar("2026-03-18"));
         String result = formatter.formatMarginTransaction(bars);
         assertThat(result).contains("2026-03-17");
         assertThat(result).contains("2026-03-18");

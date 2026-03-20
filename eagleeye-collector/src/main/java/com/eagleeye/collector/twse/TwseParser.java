@@ -1,8 +1,8 @@
 package com.eagleeye.collector.twse;
 
 import com.eagleeye.domain.entity.InstitutionalFlow;
-import com.eagleeye.domain.entity.MarginDailyBar;
-import com.eagleeye.domain.entity.TaiexDailyBar;
+import com.eagleeye.domain.entity.MarginTransaction;
+import com.eagleeye.domain.entity.TaiexIndex;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Parses TWSE TAIEX monthly JSON into TaiexDailyBar entities.
+ * Parses TWSE TAIEX monthly JSON into TaiexIndex entities.
  *
  * Column order (positional):
  *   [0] Date (ROC calendar "YYY/MM/DD")
@@ -38,7 +38,7 @@ public class TwseParser {
         this.objectMapper = objectMapper;
     }
 
-    public List<TaiexDailyBar> parse(String json) {
+    public List<TaiexIndex> parse(String json) {
         JsonNode root;
         try {
             root = objectMapper.readTree(json);
@@ -58,9 +58,9 @@ public class TwseParser {
             return List.of();
         }
 
-        List<TaiexDailyBar> bars = new ArrayList<>();
+        List<TaiexIndex> bars = new ArrayList<>();
         for (JsonNode row : dataNode) {
-            TaiexDailyBar bar = parseRow(row);
+            TaiexIndex bar = parseRow(row);
             if (bar != null) bars.add(bar);
         }
 
@@ -68,10 +68,10 @@ public class TwseParser {
         return bars;
     }
 
-    private TaiexDailyBar parseRow(JsonNode row) {
+    private TaiexIndex parseRow(JsonNode row) {
         try {
             LocalDate tradeDate = parseRocDate(row.get(0).asText());
-            TaiexDailyBar bar = new TaiexDailyBar(tradeDate);
+            TaiexIndex bar = new TaiexIndex(tradeDate);
             bar.setOpen(toFixedPoint(row.get(1).asText()));
             bar.setHigh(toFixedPoint(row.get(2).asText()));
             bar.setLow(toFixedPoint(row.get(3).asText()));
@@ -128,7 +128,7 @@ public class TwseParser {
      * Row 1 = Short Sale (融券):     cols [1-5]
      * All values are plain trading units (lots/張) — no fixed-point conversion.
      */
-    public MarginDailyBar parseMargin(String json, LocalDate date) {
+    public MarginTransaction parseMargin(String json, LocalDate date) {
         JsonNode root;
         try {
             root = objectMapper.readTree(json);
@@ -159,7 +159,7 @@ public class TwseParser {
             JsonNode marginRow = data.get(0);
             JsonNode shortRow  = data.get(1);
 
-            MarginDailyBar bar = new MarginDailyBar(date);
+            MarginTransaction bar = new MarginTransaction(date);
             bar.setMarginPurchase(toLong(marginRow.get(1).asText()));
             bar.setMarginSale(toLong(marginRow.get(2).asText()));
             bar.setMarginCashRedemption(toLong(marginRow.get(3).asText()));

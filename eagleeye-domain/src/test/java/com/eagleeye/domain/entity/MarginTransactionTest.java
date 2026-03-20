@@ -4,18 +4,18 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import static org.assertj.core.api.Assertions.assertThat;
 
-class MarginDailyBarTest {
+class MarginTransactionTest {
 
     @Test
     void constructor_setsTradeDate() {
         LocalDate date = LocalDate.of(2026, 3, 18);
-        MarginDailyBar bar = new MarginDailyBar(date);
+        MarginTransaction bar = new MarginTransaction(date);
         assertThat(bar.getTradeDate()).isEqualTo(date);
     }
 
     @Test
     void setters_storeAllFields() {
-        MarginDailyBar bar = new MarginDailyBar(LocalDate.of(2026, 3, 18));
+        MarginTransaction bar = new MarginTransaction(LocalDate.of(2026, 3, 18));
         bar.setMarginPurchase(526_296L);
         bar.setMarginSale(485_038L);
         bar.setMarginCashRedemption(6_678L);

@@ -1,8 +1,8 @@
 package com.eagleeye.collector.twse;
 
 import com.eagleeye.domain.entity.InstitutionalFlow;
-import com.eagleeye.domain.entity.MarginDailyBar;
-import com.eagleeye.domain.entity.TaiexDailyBar;
+import com.eagleeye.domain.entity.MarginTransaction;
+import com.eagleeye.domain.entity.TaiexIndex;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,20 +54,20 @@ class TwseParserTest {
 
     @Test
     void parse_validJson_returnsTwoBars() {
-        List<TaiexDailyBar> bars = parser.parse(VALID_JSON);
+        List<TaiexIndex> bars = parser.parse(VALID_JSON);
         assertThat(bars).hasSize(2);
     }
 
     @Test
     void parse_validJson_firstBarHasCorrectDate() {
-        List<TaiexDailyBar> bars = parser.parse(VALID_JSON);
+        List<TaiexIndex> bars = parser.parse(VALID_JSON);
         assertThat(bars.get(0).getTradeDate()).isEqualTo(java.time.LocalDate.of(2026, 3, 3));
     }
 
     @Test
     void parse_validJson_firstBarHasCorrectOhlcAsFixedPoint() {
-        List<TaiexDailyBar> bars = parser.parse(VALID_JSON);
-        TaiexDailyBar bar = bars.get(0);
+        List<TaiexIndex> bars = parser.parse(VALID_JSON);
+        TaiexIndex bar = bars.get(0);
         assertThat(bar.getOpen()).isEqualTo(2023456L);
         assertThat(bar.getHigh()).isEqualTo(2045678L);
         assertThat(bar.getLow()).isEqualTo(2010023L);
@@ -77,21 +77,21 @@ class TwseParserTest {
     @Test
     void parse_validJson_volumeAndTurnoverAreNull() {
         // The TWSE /indicesReport/MI_5MINS_HIST endpoint does not provide volume/turnover
-        List<TaiexDailyBar> bars = parser.parse(VALID_JSON);
-        TaiexDailyBar bar = bars.get(0);
+        List<TaiexIndex> bars = parser.parse(VALID_JSON);
+        TaiexIndex bar = bars.get(0);
         assertThat(bar.getVolume()).isNull();
         assertThat(bar.getTurnover()).isNull();
     }
 
     @Test
     void parse_emptyDataArray_returnsEmptyList() {
-        List<TaiexDailyBar> bars = parser.parse(EMPTY_DATA_JSON);
+        List<TaiexIndex> bars = parser.parse(EMPTY_DATA_JSON);
         assertThat(bars).isEmpty();
     }
 
     @Test
     void parse_nonOkStat_returnsEmptyList() {
-        List<TaiexDailyBar> bars = parser.parse(NO_OK_STAT_JSON);
+        List<TaiexIndex> bars = parser.parse(NO_OK_STAT_JSON);
         assertThat(bars).isEmpty();
     }
 
@@ -151,7 +151,7 @@ class TwseParserTest {
     @Test
     void parseMargin_validJson_returnsBarWithAllFields() {
         LocalDate date = LocalDate.of(2026, 3, 18);
-        MarginDailyBar bar = parser.parseMargin(MARGIN_JSON, date);
+        MarginTransaction bar = parser.parseMargin(MARGIN_JSON, date);
 
         assertThat(bar).isNotNull();
         assertThat(bar.getTradeDate()).isEqualTo(date);
@@ -268,7 +268,7 @@ class TwseParserTest {
                   ]
                 }
                 """;
-        List<TaiexDailyBar> bars = parser.parse(mixedJson);
+        List<TaiexIndex> bars = parser.parse(mixedJson);
         assertThat(bars).hasSize(1);
         assertThat(bars.get(0).getTradeDate()).isEqualTo(java.time.LocalDate.of(2026, 3, 3));
     }

@@ -2,8 +2,8 @@ package com.eagleeye.shell.commands;
 
 import com.eagleeye.collector.service.MarginCollectionResult;
 import com.eagleeye.collector.service.MarginTransactionService;
-import com.eagleeye.domain.entity.MarginDailyBar;
-import com.eagleeye.domain.repository.MarginDailyBarRepository;
+import com.eagleeye.domain.entity.MarginTransaction;
+import com.eagleeye.domain.repository.MarginTransactionRepository;
 import com.eagleeye.shell.formatter.TableFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.shell.core.command.annotation.Command;
@@ -19,12 +19,12 @@ import java.util.Optional;
 public class MarginTransactionCommands {
 
     private final MarginTransactionService marginTransactionService;
-    private final MarginDailyBarRepository repository;
+    private final MarginTransactionRepository repository;
     private final TableFormatter formatter;
 
     @Autowired
     public MarginTransactionCommands(MarginTransactionService marginTransactionService,
-                                     MarginDailyBarRepository repository,
+                                     MarginTransactionRepository repository,
                                      TableFormatter formatter) {
         this.marginTransactionService = marginTransactionService;
         this.repository = repository;
@@ -35,7 +35,7 @@ public class MarginTransactionCommands {
     public String list(
             @Option(longName = "date", description = "Trade date YYYY-MM-DD (default: today)", defaultValue = "") String date) {
         LocalDate d = (date == null || date.isEmpty()) ? LocalDate.now() : LocalDate.parse(date);
-        Optional<MarginDailyBar> bar = repository.findByTradeDate(d);
+        Optional<MarginTransaction> bar = repository.findByTradeDate(d);
         if (bar.isEmpty()) return "No data for " + d;
         return formatter.formatMarginTransaction(List.of(bar.get()));
     }
@@ -46,7 +46,7 @@ public class MarginTransactionCommands {
             @Option(longName = "to",   description = "End date YYYY-MM-DD (default: today)",         defaultValue = "") String to) {
         LocalDate toDate   = (to   == null || to.isEmpty())   ? LocalDate.now()      : LocalDate.parse(to);
         LocalDate fromDate = (from == null || from.isEmpty()) ? toDate.minusDays(30) : LocalDate.parse(from);
-        List<MarginDailyBar> bars = repository.findByTradeDateBetweenOrderByTradeDateAsc(fromDate, toDate);
+        List<MarginTransaction> bars = repository.findByTradeDateBetweenOrderByTradeDateAsc(fromDate, toDate);
         return "Margin \u2014 " + fromDate + " \u2192 " + toDate + " (" + bars.size() + " bars)\n"
                 + formatter.formatMarginTransaction(bars);
     }

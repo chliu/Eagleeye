@@ -2,9 +2,9 @@ package com.eagleeye.shell.formatter;
 
 import com.eagleeye.domain.entity.FuturesPosition;
 import com.eagleeye.domain.entity.InstitutionalFlow;
-import com.eagleeye.domain.entity.MarginDailyBar;
+import com.eagleeye.domain.entity.MarginTransaction;
 import com.eagleeye.domain.entity.OptionsPosition;
-import com.eagleeye.domain.entity.TaiexDailyBar;
+import com.eagleeye.domain.entity.TaiexIndex;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -91,14 +91,14 @@ public class TableFormatter {
     }
 
     /** TAIEX daily bars over a date range. Columns: Date, Open, High, Low, Close, Volume, Turnover. */
-    public String formatMarketIndex(List<TaiexDailyBar> bars) {
+    public String formatMarketIndex(List<TaiexIndex> bars) {
         if (bars.isEmpty()) return "No data found.";
 
         int[] widths  = {W_DATE, W_OHLC, W_OHLC, W_OHLC, W_OHLC, W_VOLUME, W_TURNOVER};
         String[] headers = {"Date", "Open", "High", "Low", "Close", "Volume", "Turnover"};
 
         List<Row> rows = new ArrayList<>();
-        for (TaiexDailyBar b : bars) {
+        for (TaiexIndex b : bars) {
             rows.add(Row.data(
                     b.getTradeDate().toString(),
                     fmtOhlc(b.getOpen()),
@@ -113,14 +113,14 @@ public class TableFormatter {
     }
 
     /** Taiwan market-wide margin transaction daily summary. Columns: Date + 8 numeric. */
-    public String formatMarginTransaction(List<MarginDailyBar> bars) {
+    public String formatMarginTransaction(List<MarginTransaction> bars) {
         if (bars.isEmpty()) return "No data found.";
 
         int[] widths  = {W_DATE, W_MARGIN, W_MARGIN, W_MARGIN, W_MARGIN, W_MARGIN, W_MARGIN, W_MARGIN, W_MARGIN};
         String[] headers = {"Date", "M-Buy", "M-Sell", "M-Redeem", "M-Bal", "S-Cover", "S-Sell", "S-Redeem", "S-Bal"};
 
         List<Row> rows = new ArrayList<>();
-        for (MarginDailyBar b : bars) {
+        for (MarginTransaction b : bars) {
             rows.add(Row.data(
                     b.getTradeDate().toString(),
                     fmtVol(b.getMarginPurchase()),

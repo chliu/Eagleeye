@@ -2,8 +2,8 @@ package com.eagleeye.collector.service;
 
 import com.eagleeye.collector.twse.TwseClient;
 import com.eagleeye.collector.twse.TwseParser;
-import com.eagleeye.domain.entity.TaiexDailyBar;
-import com.eagleeye.domain.repository.TaiexDailyBarRepository;
+import com.eagleeye.domain.entity.TaiexIndex;
+import com.eagleeye.domain.repository.TaiexIndexRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,7 +26,7 @@ class MarketIndexServiceTest {
     private TwseClient twseClient;
 
     @Mock
-    private TaiexDailyBarRepository repository;
+    private TaiexIndexRepository repository;
 
     private MarketIndexService service;
 
@@ -77,7 +77,7 @@ class MarketIndexServiceTest {
         assertThat(result.status()).isEqualTo(MarketIndexCollectionResult.Status.COLLECTED);
         assertThat(result.barsCount()).isEqualTo(1);
         assertThat(result.yearMonth()).isEqualTo(MARCH_2026);
-        verify(repository, times(1)).save(any(TaiexDailyBar.class));
+        verify(repository, times(1)).save(any(TaiexIndex.class));
     }
 
     @Test
@@ -117,7 +117,7 @@ class MarketIndexServiceTest {
 
     @Test
     void collectMonth_existingBar_isUpdatedNotDuplicated() {
-        TaiexDailyBar existing = new TaiexDailyBar(LocalDate.of(2026, 3, 3));
+        TaiexIndex existing = new TaiexIndex(LocalDate.of(2026, 3, 3));
         existing.setClose(1000000L);
 
         when(twseClient.fetchMonthJson(MARCH_2026)).thenReturn(ONE_BAR_JSON);
@@ -126,7 +126,7 @@ class MarketIndexServiceTest {
 
         service.collectMonth(MARCH_2026);
 
-        ArgumentCaptor<TaiexDailyBar> captor = ArgumentCaptor.forClass(TaiexDailyBar.class);
+        ArgumentCaptor<TaiexIndex> captor = ArgumentCaptor.forClass(TaiexIndex.class);
         verify(repository, times(1)).save(captor.capture());
         assertThat(captor.getValue().getClose()).isEqualTo(2030045L);
     }
@@ -139,7 +139,7 @@ class MarketIndexServiceTest {
 
         service.collectMonth(MARCH_2026);
 
-        ArgumentCaptor<TaiexDailyBar> captor = ArgumentCaptor.forClass(TaiexDailyBar.class);
+        ArgumentCaptor<TaiexIndex> captor = ArgumentCaptor.forClass(TaiexIndex.class);
         verify(repository, times(1)).save(captor.capture());
         assertThat(captor.getValue().getVolume()).isEqualTo(3456789L);
         assertThat(captor.getValue().getTurnover()).isEqualTo(123456789012L);

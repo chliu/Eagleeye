@@ -2,8 +2,8 @@ package com.eagleeye.collector.service;
 
 import com.eagleeye.collector.twse.TwseClient;
 import com.eagleeye.collector.twse.TwseParser;
-import com.eagleeye.domain.entity.MarginDailyBar;
-import com.eagleeye.domain.repository.MarginDailyBarRepository;
+import com.eagleeye.domain.entity.MarginTransaction;
+import com.eagleeye.domain.repository.MarginTransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +24,7 @@ class MarginTransactionServiceTest {
 
     @Mock private TwseClient twseClient;
     @Mock private TwseParser twseParser;
-    @Mock private MarginDailyBarRepository repository;
+    @Mock private MarginTransactionRepository repository;
 
     private MarginTransactionService service;
 
@@ -38,7 +38,7 @@ class MarginTransactionServiceTest {
 
     @Test
     void collectDate_success_savesAndReturnsCollected() {
-        MarginDailyBar bar = new MarginDailyBar(DATE);
+        MarginTransaction bar = new MarginTransaction(DATE);
         when(twseClient.fetchMarginJson(DATE)).thenReturn(MARGIN_JSON);
         when(twseParser.parseMargin(MARGIN_JSON, DATE)).thenReturn(bar);
         when(repository.findByTradeDate(DATE)).thenReturn(Optional.empty());
@@ -47,7 +47,7 @@ class MarginTransactionServiceTest {
 
         assertThat(result.status()).isEqualTo(MarginCollectionResult.Status.COLLECTED);
         assertThat(result.tradeDate()).isEqualTo(DATE);
-        verify(repository).save(any(MarginDailyBar.class));
+        verify(repository).save(any(MarginTransaction.class));
     }
 
     @Test
@@ -74,8 +74,8 @@ class MarginTransactionServiceTest {
 
     @Test
     void collectDate_existingBar_upserts() {
-        MarginDailyBar existing = new MarginDailyBar(DATE);
-        MarginDailyBar parsed   = new MarginDailyBar(DATE);
+        MarginTransaction existing = new MarginTransaction(DATE);
+        MarginTransaction parsed   = new MarginTransaction(DATE);
         parsed.setMarginBalance(8_109_024L);
         parsed.setShortBalance(204_948L);
 
@@ -85,7 +85,7 @@ class MarginTransactionServiceTest {
 
         service.collectDate(DATE);
 
-        ArgumentCaptor<MarginDailyBar> captor = ArgumentCaptor.forClass(MarginDailyBar.class);
+        ArgumentCaptor<MarginTransaction> captor = ArgumentCaptor.forClass(MarginTransaction.class);
         verify(repository).save(captor.capture());
         assertThat(captor.getValue().getMarginBalance()).isEqualTo(8_109_024L);
         assertThat(captor.getValue().getShortBalance()).isEqualTo(204_948L);

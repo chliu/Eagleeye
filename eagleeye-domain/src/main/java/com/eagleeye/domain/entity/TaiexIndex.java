@@ -5,13 +5,13 @@ import java.time.LocalDate;
 
 @Entity
 @Table(
-    name = "taiex_daily_bar",
+    name = "taiex_index",
     uniqueConstraints = @UniqueConstraint(
-        name = "uq_taiex_daily_bar_trade_date",
+        name = "uq_taiex_index_trade_date",
         columnNames = {"trade_date"}
     )
 )
-public class TaiexDailyBar {
+public class TaiexIndex {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,9 +40,9 @@ public class TaiexDailyBar {
     @Column(name = "turnover")
     private Long turnover;
 
-    protected TaiexDailyBar() {}
+    protected TaiexIndex() {}
 
-    public TaiexDailyBar(LocalDate tradeDate) {
+    public TaiexIndex(LocalDate tradeDate) {
         this.tradeDate = tradeDate;
     }
 

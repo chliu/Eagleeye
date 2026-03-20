@@ -1,0 +1,21 @@
+1773837778243:market-index backfill --from 2026-01-01 --to 2026-03-18
+1773838662557:market-index list
+1773838699232:market-index collect --date 2026/03/18
+1773838705734:market-index collect --date 2026-03-18
+1773838745062:market-index backfill --from 2026-01-01 --to 2026-03-18
+1773838747201:exit
+1773840764369:market-index list
+1773840771841:market-index show
+1773840793684:market-index show --from 2026-01-01 --to 2026-03-18
+1773840822730:futures list
+1773841112257:exit
+1773841142040:market-index list
+1773841152499:exit
+1773841191769:market-index list --date 2026-03-18
+1773841198827:market-index show --date 2026-03-18
+1773841225271:exit
+1773841381663:market-index list
+1773841397446:market-index show
+1773841435112:quit
+1773886184061:margin list
+1773886197320:exit

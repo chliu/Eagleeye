@@ -1,7 +1,7 @@
 package com.eagleeye.collector;
 
-import com.eagleeye.domain.entity.MarginDailyBar;
-import com.eagleeye.domain.repository.MarginDailyBarRepository;
+import com.eagleeye.domain.entity.MarginTransaction;
+import com.eagleeye.domain.repository.MarginTransactionRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Integration tests for {@link MarginDailyBarRepository} — verifies JPA mapping,
+ * Integration tests for {@link MarginTransactionRepository} — verifies JPA mapping,
  * query methods, ordering, and the unique constraint on trade_date.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
@@ -25,10 +25,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
         "spring.jpa.hibernate.ddl-auto=create-drop"
 })
 @Transactional
-class MarginDailyBarRepositoryIT {
+class MarginTransactionRepositoryIT {
 
     @Autowired
-    private MarginDailyBarRepository repository;
+    private MarginTransactionRepository repository;
 
     private static final LocalDate DATE = LocalDate.of(2026, 3, 18);
 
@@ -36,9 +36,9 @@ class MarginDailyBarRepositoryIT {
 
     @Test
     void findByTradeDate_returnsEntity_whenExists() {
-        repository.saveAndFlush(new MarginDailyBar(DATE));
+        repository.saveAndFlush(new MarginTransaction(DATE));
 
-        Optional<MarginDailyBar> found = repository.findByTradeDate(DATE);
+        Optional<MarginTransaction> found = repository.findByTradeDate(DATE);
 
         assertThat(found).isPresent();
         assertThat(found.get().getTradeDate()).isEqualTo(DATE);
@@ -58,11 +58,11 @@ class MarginDailyBarRepositoryIT {
         LocalDate d3 = LocalDate.of(2026, 3, 19);
         // save out of order — query must re-sort
         repository.saveAllAndFlush(List.of(
-                new MarginDailyBar(d3),
-                new MarginDailyBar(d1),
-                new MarginDailyBar(d2)));
+                new MarginTransaction(d3),
+                new MarginTransaction(d1),
+                new MarginTransaction(d2)));
 
-        List<MarginDailyBar> results = repository.findByTradeDateBetweenOrderByTradeDateAsc(d1, d3);
+        List<MarginTransaction> results = repository.findByTradeDateBetweenOrderByTradeDateAsc(d1, d3);
 
         assertThat(results).hasSize(3);
         assertThat(results.get(0).getTradeDate()).isEqualTo(d1);
@@ -77,22 +77,22 @@ class MarginDailyBarRepositoryIT {
         LocalDate to     = LocalDate.of(2026, 3, 18);
         LocalDate after  = LocalDate.of(2026, 3, 19);
         repository.saveAllAndFlush(List.of(
-                new MarginDailyBar(before),
-                new MarginDailyBar(from),
-                new MarginDailyBar(to),
-                new MarginDailyBar(after)));
+                new MarginTransaction(before),
+                new MarginTransaction(from),
+                new MarginTransaction(to),
+                new MarginTransaction(after)));
 
-        List<MarginDailyBar> results = repository.findByTradeDateBetweenOrderByTradeDateAsc(from, to);
+        List<MarginTransaction> results = repository.findByTradeDateBetweenOrderByTradeDateAsc(from, to);
 
         assertThat(results).hasSize(2);
-        assertThat(results).extracting(MarginDailyBar::getTradeDate).containsExactly(from, to);
+        assertThat(results).extracting(MarginTransaction::getTradeDate).containsExactly(from, to);
     }
 
     // ── persistence ───────────────────────────────────────────────────────────
 
     @Test
     void save_persistsAllTenFields() {
-        MarginDailyBar bar = new MarginDailyBar(DATE);
+        MarginTransaction bar = new MarginTransaction(DATE);
         bar.setMarginPurchase(526_296L);
         bar.setMarginSale(485_038L);
         bar.setMarginCashRedemption(6_678L);
@@ -107,7 +107,7 @@ class MarginDailyBarRepositoryIT {
 
         // clear first-level cache so we hit the DB
         repository.findById(bar.getId()); // force reload via fresh query
-        MarginDailyBar found = repository.findByTradeDate(DATE).orElseThrow();
+        MarginTransaction found = repository.findByTradeDate(DATE).orElseThrow();
 
         assertThat(found.getMarginPurchase()).isEqualTo(526_296L);
         assertThat(found.getMarginSale()).isEqualTo(485_038L);
@@ -123,9 +123,9 @@ class MarginDailyBarRepositoryIT {
 
     @Test
     void save_duplicateTradeDate_throwsConstraintViolation() {
-        repository.saveAndFlush(new MarginDailyBar(DATE));
+        repository.saveAndFlush(new MarginTransaction(DATE));
 
-        MarginDailyBar duplicate = new MarginDailyBar(DATE);
+        MarginTransaction duplicate = new MarginTransaction(DATE);
 
         assertThatThrownBy(() -> repository.saveAndFlush(duplicate))
                 .isInstanceOf(Exception.class);

@@ -1,8 +1,8 @@
 package com.eagleeye.collector.service;
 
 import com.eagleeye.collector.twse.TwseClient;
-import com.eagleeye.domain.entity.MarginDailyBar;
-import com.eagleeye.domain.repository.MarginDailyBarRepository;
+import com.eagleeye.domain.entity.MarginTransaction;
+import com.eagleeye.domain.repository.MarginTransactionRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -27,7 +27,7 @@ class MarginTransactionServiceIT {
     private MarginTransactionService service;
 
     @Autowired
-    private MarginDailyBarRepository repository;
+    private MarginTransactionRepository repository;
 
     @MockitoBean
     private TwseClient twseClient;
@@ -66,7 +66,7 @@ class MarginTransactionServiceIT {
         assertThat(result.status()).isEqualTo(MarginCollectionResult.Status.COLLECTED);
         assertThat(result.tradeDate()).isEqualTo(DATE);
 
-        MarginDailyBar saved = repository.findByTradeDate(DATE).orElseThrow();
+        MarginTransaction saved = repository.findByTradeDate(DATE).orElseThrow();
         assertThat(saved.getMarginPurchase()).isEqualTo(526_296L);
         assertThat(saved.getMarginSale()).isEqualTo(485_038L);
         assertThat(saved.getMarginCashRedemption()).isEqualTo(6_678L);
@@ -104,7 +104,7 @@ class MarginTransactionServiceIT {
         service.collectDate(DATE);
 
         assertThat(repository.count()).isEqualTo(1);
-        MarginDailyBar updated = repository.findByTradeDate(DATE).orElseThrow();
+        MarginTransaction updated = repository.findByTradeDate(DATE).orElseThrow();
         assertThat(updated.getMarginPurchase()).isEqualTo(600_000L);
         assertThat(updated.getShortBalance()).isEqualTo(230_000L);
     }

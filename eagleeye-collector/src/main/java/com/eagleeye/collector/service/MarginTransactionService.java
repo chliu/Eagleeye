@@ -2,8 +2,8 @@ package com.eagleeye.collector.service;
 
 import com.eagleeye.collector.twse.TwseClient;
 import com.eagleeye.collector.twse.TwseParser;
-import com.eagleeye.domain.entity.MarginDailyBar;
-import com.eagleeye.domain.repository.MarginDailyBarRepository;
+import com.eagleeye.domain.entity.MarginTransaction;
+import com.eagleeye.domain.repository.MarginTransactionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -18,11 +18,11 @@ public class MarginTransactionService {
 
     private final TwseClient twseClient;
     private final TwseParser twseParser;
-    private final MarginDailyBarRepository repository;
+    private final MarginTransactionRepository repository;
 
     public MarginTransactionService(TwseClient twseClient,
                                     TwseParser twseParser,
-                                    MarginDailyBarRepository repository) {
+                                    MarginTransactionRepository repository) {
         this.twseClient = twseClient;
         this.twseParser = twseParser;
         this.repository = repository;
@@ -34,7 +34,7 @@ public class MarginTransactionService {
             String json = twseClient.fetchMarginJson(date);
             log.debug("Margin raw JSON for {}: {}", date,
                     json != null && json.length() > 300 ? json.substring(0, 300) + "..." : json);
-            MarginDailyBar parsed = twseParser.parseMargin(json, date);
+            MarginTransaction parsed = twseParser.parseMargin(json, date);
             if (parsed == null) {
                 log.info("No margin data for {}", date);
                 return MarginCollectionResult.noData(date);
@@ -48,10 +48,10 @@ public class MarginTransactionService {
         }
     }
 
-    private void upsert(MarginDailyBar parsed) {
-        MarginDailyBar bar = repository
+    private void upsert(MarginTransaction parsed) {
+        MarginTransaction bar = repository
                 .findByTradeDate(parsed.getTradeDate())
-                .orElseGet(() -> new MarginDailyBar(parsed.getTradeDate()));
+                .orElseGet(() -> new MarginTransaction(parsed.getTradeDate()));
 
         bar.setMarginPurchase(parsed.getMarginPurchase());
         bar.setMarginSale(parsed.getMarginSale());

@@ -2,8 +2,8 @@ package com.eagleeye.collector.service;
 
 import com.eagleeye.collector.twse.TwseClient;
 import com.eagleeye.collector.twse.TwseParser;
-import com.eagleeye.domain.entity.TaiexDailyBar;
-import com.eagleeye.domain.repository.TaiexDailyBarRepository;
+import com.eagleeye.domain.entity.TaiexIndex;
+import com.eagleeye.domain.repository.TaiexIndexRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -21,11 +21,11 @@ public class MarketIndexService {
 
     private final TwseClient twseClient;
     private final TwseParser twseParser;
-    private final TaiexDailyBarRepository repository;
+    private final TaiexIndexRepository repository;
 
     public MarketIndexService(TwseClient twseClient,
                               TwseParser twseParser,
-                              TaiexDailyBarRepository repository) {
+                              TaiexIndexRepository repository) {
         this.twseClient = twseClient;
         this.twseParser = twseParser;
         this.repository = repository;
@@ -35,7 +35,7 @@ public class MarketIndexService {
     public MarketIndexCollectionResult collectMonth(YearMonth yearMonth) {
         try {
             String ohlcJson = twseClient.fetchMonthJson(yearMonth);
-            List<TaiexDailyBar> bars = twseParser.parse(ohlcJson);
+            List<TaiexIndex> bars = twseParser.parse(ohlcJson);
 
             if (bars.isEmpty()) {
                 log.info("No TAIEX data for {} — skipping", yearMonth);
@@ -66,10 +66,10 @@ public class MarketIndexService {
         return collectMonth(YearMonth.from(date));
     }
 
-    private void upsert(TaiexDailyBar parsed) {
-        TaiexDailyBar bar = repository
+    private void upsert(TaiexIndex parsed) {
+        TaiexIndex bar = repository
                 .findByTradeDate(parsed.getTradeDate())
-                .orElseGet(() -> new TaiexDailyBar(parsed.getTradeDate()));
+                .orElseGet(() -> new TaiexIndex(parsed.getTradeDate()));
 
         bar.setOpen(parsed.getOpen());
         bar.setHigh(parsed.getHigh());

@@ -2,8 +2,8 @@ package com.eagleeye.shell.commands;
 
 import com.eagleeye.collector.service.MarketIndexCollectionResult;
 import com.eagleeye.collector.service.MarketIndexService;
-import com.eagleeye.domain.entity.TaiexDailyBar;
-import com.eagleeye.domain.repository.TaiexDailyBarRepository;
+import com.eagleeye.domain.entity.TaiexIndex;
+import com.eagleeye.domain.repository.TaiexIndexRepository;
 import com.eagleeye.shell.formatter.TableFormatter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +24,7 @@ import static org.mockito.Mockito.*;
 class MarketIndexCommandsTest {
 
     @Mock private MarketIndexService marketIndexService;
-    @Mock private TaiexDailyBarRepository repository;
+    @Mock private TaiexIndexRepository repository;
     @Mock private TableFormatter formatter;
 
     private MarketIndexCommands commands;
@@ -56,7 +56,7 @@ class MarketIndexCommandsTest {
 
     @Test
     void list_barFound_returnsFormattedTable() {
-        TaiexDailyBar bar = new TaiexDailyBar(LocalDate.of(2026, 3, 3));
+        TaiexIndex bar = new TaiexIndex(LocalDate.of(2026, 3, 3));
         when(repository.findByTradeDate(LocalDate.of(2026, 3, 3))).thenReturn(Optional.of(bar));
         when(formatter.formatMarketIndex(List.of(bar))).thenReturn("rendered");
 
@@ -102,7 +102,7 @@ class MarketIndexCommandsTest {
 
     @Test
     void show_returnsFormattedTableWithHeader() {
-        TaiexDailyBar bar = new TaiexDailyBar(LocalDate.of(2026, 3, 3));
+        TaiexIndex bar = new TaiexIndex(LocalDate.of(2026, 3, 3));
         when(repository.findByTradeDateBetweenOrderByTradeDateAsc(any(), any()))
                 .thenReturn(List.of(bar));
         when(formatter.formatMarketIndex(List.of(bar))).thenReturn("rendered-table");

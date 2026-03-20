@@ -5,13 +5,13 @@ import java.time.LocalDate;
 
 @Entity
 @Table(
-    name = "margin_daily_bar",
+    name = "margin_transaction",
     uniqueConstraints = @UniqueConstraint(
-        name = "uq_margin_daily_bar_trade_date",
+        name = "uq_margin_transaction_trade_date",
         columnNames = {"trade_date"}
     )
 )
-public class MarginDailyBar {
+public class MarginTransaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,9 +34,9 @@ public class MarginDailyBar {
     @Column(name = "short_prev_balance")       private Long shortPrevBalance;
     @Column(name = "short_balance")            private Long shortBalance;
 
-    protected MarginDailyBar() {}
+    protected MarginTransaction() {}
 
-    public MarginDailyBar(LocalDate tradeDate) {
+    public MarginTransaction(LocalDate tradeDate) {
         this.tradeDate = tradeDate;
     }
 
