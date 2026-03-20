@@ -1,6 +1,7 @@
 package com.eagleeye.shell.formatter;
 
 import com.eagleeye.domain.entity.FuturesPosition;
+import com.eagleeye.domain.entity.InstitutionalFlow;
 import com.eagleeye.domain.entity.MarginDailyBar;
 import com.eagleeye.domain.entity.OptionsPosition;
 import com.eagleeye.domain.entity.TaiexDailyBar;
@@ -43,6 +44,7 @@ public class TableFormatter {
     private static final int W_VOLUME    = 14;  // e.g. "10,724,729,528"
     private static final int W_TURNOVER  = 16;  // e.g. "669,781,989,470"
     private static final int W_MARGIN    = 11;  // e.g. "8,109,024" (9 chars)
+    private static final int W_FLOW      = 17;  // e.g. "+123,456,789,012" (15 chars + sign + space)
 
     // Box-drawing characters
     private static final char H  = '─';
@@ -85,7 +87,7 @@ public class TableFormatter {
             lastContract = contract;
         }
 
-        return renderTable(headers, widths, rows);
+        return renderTable(headers, widths, rows, 2);
     }
 
     /** TAIEX daily bars over a date range. Columns: Date, Open, High, Low, Close, Volume, Turnover. */
@@ -107,7 +109,7 @@ public class TableFormatter {
                     fmtVol(b.getTurnover())
             ));
         }
-        return renderTable(headers, widths, rows);
+        return renderTable(headers, widths, rows, 1);
     }
 
     /** Taiwan market-wide margin transaction daily summary. Columns: Date + 8 numeric. */
@@ -131,7 +133,32 @@ public class TableFormatter {
                     fmtVol(b.getShortBalance())
             ));
         }
-        return renderTable(headers, widths, rows);
+        return renderTable(headers, widths, rows, 1);
+    }
+
+    /** Institutional investor daily trading values. Columns: Date + 9 numeric. */
+    public String formatInstitutionalFlow(List<InstitutionalFlow> flows) {
+        if (flows.isEmpty()) return "No data found.";
+
+        int[] widths = {W_DATE, W_FLOW, W_FLOW, W_FLOW, W_FLOW, W_FLOW, W_FLOW, W_FLOW, W_FLOW, W_FLOW};
+        String[] headers = {"Date", "F-Buy", "F-Sell", "F-Net", "IT-Buy", "IT-Sell", "IT-Net", "D-Buy", "D-Sell", "D-Net"};
+
+        List<Row> rows = new ArrayList<>();
+        for (InstitutionalFlow f : flows) {
+            rows.add(Row.data(
+                    f.getTradeDate().toString(),
+                    fmtVol(f.getForeignBuy()),
+                    fmtVol(f.getForeignSell()),
+                    fmtNet(f.getForeignNet()),
+                    fmtVol(f.getInvestmentTrustBuy()),
+                    fmtVol(f.getInvestmentTrustSell()),
+                    fmtNet(f.getInvestmentTrustNet()),
+                    fmtVol(f.getDealerBuy()),
+                    fmtVol(f.getDealerSell()),
+                    fmtNet(f.getDealerNet())
+            ));
+        }
+        return renderTable(headers, widths, rows, 1);
     }
 
     /** One contract over a date range (trend view). Shows Date + Trader columns. */
@@ -165,25 +192,25 @@ public class TableFormatter {
             lastDate = date;
         }
 
-        return renderTable(headers, widths, rows);
+        return renderTable(headers, widths, rows, 2);
     }
 
     // -----------------------------------------------------------------------
     // Table rendering engine
     // -----------------------------------------------------------------------
 
-    private String renderTable(String[] headers, int[] widths, List<Row> rows) {
+    private String renderTable(String[] headers, int[] widths, List<Row> rows, int numTextCols) {
         StringBuilder sb = new StringBuilder();
 
         sb.append(borderLine(TL, TT, H, TR, widths)).append('\n');
-        sb.append(dataLine(headers, widths)).append('\n');
+        sb.append(dataLine(headers, widths, numTextCols)).append('\n');
         sb.append(borderLine(LT, CR, H, RT, widths)).append('\n');
 
         for (Row row : rows) {
             if (row.isDivider) {
                 sb.append(borderLine(LT, CR, H, RT, widths)).append('\n');
             } else {
-                sb.append(dataLine(row.cells, widths)).append('\n');
+                sb.append(dataLine(row.cells, widths, numTextCols)).append('\n');
             }
         }
 
@@ -201,13 +228,13 @@ public class TableFormatter {
         return sb.toString();
     }
 
-    private String dataLine(String[] cells, int[] widths) {
+    private String dataLine(String[] cells, int[] widths, int numTextCols) {
         StringBuilder sb = new StringBuilder();
         sb.append(V);
         for (int i = 0; i < widths.length; i++) {
             String cell = cells[i];
-            // First 2 columns left-aligned, numeric columns right-aligned
-            String fmt = i < 2 ? " %-" + widths[i] + "s " : " %" + widths[i] + "s ";
+            // First numTextCols columns left-aligned, numeric columns right-aligned
+            String fmt = i < numTextCols ? " %-" + widths[i] + "s " : " %" + widths[i] + "s ";
             sb.append(String.format(fmt, truncate(cell, widths[i])));
             sb.append(V);
         }
