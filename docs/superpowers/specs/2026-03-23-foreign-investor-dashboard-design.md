@@ -17,11 +17,11 @@ Build a web dashboard for short-term analysis of foreign institutional investor 
 
 | Signal | Source Entity | Derived Metric |
 |--------|--------------|----------------|
-| 外資現貨 淨買賣 | `InstitutionalFlow` | `foreignNet = foreignBuy - foreignSell` (NTD); 40-day cumulative |
-| 外資期貨 多空比 | `FuturesPosition` (FINI) | `(longOI - shortOI) / (longOI + shortOI)`, range -1 to +1 |
-| 外資選擇權 淨部位 | `OptionsPosition` (FINI) | `callLongOI - putLongOI` (directional bias) |
-| 融資券 增減率 | `MarginTransaction` | `(todayBalance - prevBalance) / prevBalance` (retail sentiment) |
-| 加權指數 | `TaiexIndex` | Close price, daily return |
+| 外資現貨 淨買賣 | `InstitutionalFlow` | `foreignNet = foreignBuy - foreignSell` (NTD); running cumulative |
+| 外資期貨 多空比 | `FuturesPosition` contract=`"TX"`, traderType=`FINI` | `(oiLongVolume - oiShortVolume) / (oiLongVolume + oiShortVolume)`, range -1 to +1 |
+| 外資選擇權 淨部位 | `OptionsPosition` contract=`"TXO"`, traderType=`FINI` | `oiNetVolume` (already stored: long OI − short OI, in lots) |
+| 融資券 增減率 | `MarginTransaction` | `(marginBalance - marginPrevBalance) / (double) marginPrevBalance` (retail sentiment) |
+| 加權指數 | `TaiexIndex` | Close price (stored as `close / 100.0` → `Double` for display), daily return |
 
 ### Out of Scope
 
@@ -74,11 +74,11 @@ eagleeye/
 Browser GET /dashboard?days=40
   → DashboardController
   → DashboardService.buildViewModel(days)
-      → TaiexIndexRepository.findByTradeDateBetween(from, to)
-      → InstitutionalFlowRepository.findByTradeDateBetween(from, to)
-      → FuturesPositionRepository.findByTradeDateBetweenAndTraderType(from, to, FINI)
-      → OptionsPositionRepository.findByTradeDateBetweenAndTraderType(from, to, FINI)
-      → MarginTransactionRepository.findByTradeDateBetween(from, to)
+      → TaiexIndexRepository.findByTradeDateBetweenOrderByTradeDateAsc(from, to)
+      → InstitutionalFlowRepository.findByTradeDateBetweenOrderByTradeDateAsc(from, to)
+      → FuturesPositionRepository.findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc("TX", FINI, from, to)
+      → OptionsPositionRepository.findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc("TXO", FINI, from, to)
+      → MarginTransactionRepository.findByTradeDateBetweenOrderByTradeDateAsc(from, to)
       → compute signals, detect divergences
       → return DashboardViewModel
   → Thymeleaf renders dashboard.html
@@ -94,8 +94,11 @@ Browser GET /dashboard?days=40
 ```java
 @Controller
 public class DashboardController {
+    private static final Set<Integer> ALLOWED_DAYS = Set.of(20, 40, 60);
+
     @GetMapping("/dashboard")
     public String dashboard(@RequestParam(defaultValue = "40") int days, Model model) {
+        if (!ALLOWED_DAYS.contains(days)) days = 40;  // silently normalize
         model.addAttribute("vm", dashboardService.buildViewModel(days));
         return "dashboard";
     }
@@ -116,14 +119,14 @@ Responsibilities:
 ```java
 public record DashboardViewModel(
     List<String>  dateLabels,        // "M/d" format for chart x-axis
-    List<Long>    taiexClose,        // TAIEX close ×100 (fixed-point)
-    List<Long>    spotNetFlow,       // 外資現貨 daily net (NTD)
-    List<Long>    spotCumulative,    // 外資現貨 cumulative net (NTD)
-    List<Double>  futuresLSRatio,    // 外資期貨 L/S ratio [-1, +1]
-    List<Long>    optionsNetOI,      // 外資選擇權 call-put net OI (lots)
-    List<Double>  marginChangeRate,  // 融資 daily change %
+    List<Double>  taiexClose,        // TAIEX close (entity value / 100.0) — display-ready
+    List<Long>    spotNetFlow,       // 外資現貨 daily net NTD (foreignNet field)
+    List<Long>    spotCumulative,    // 外資現貨 cumulative net NTD over selected period
+    List<Double>  futuresLSRatio,    // 外資期貨 L/S ratio: (oiLongVolume-oiShortVolume)/(oiLongVolume+oiShortVolume)
+    List<Long>    optionsNetOI,      // 外資選擇權 oiNetVolume (lots, already stored as long-short)
+    List<Double>  marginChangeRate,  // 融資 (marginBalance-marginPrevBalance)/marginPrevBalance
     List<AlertItem> alerts,          // divergence alert signals
-    int           days               // selected range (20/40/60)
+    int           days               // selected range: 20, 40, or 60 only
 )
 
 public record AlertItem(String signal, Severity severity, String message) {}
@@ -160,10 +163,10 @@ Chart.js data injected via Thymeleaf inline JavaScript:
 
 | Signal | Divergence Condition | Severity |
 |--------|---------------------|----------|
-| 外資現貨 | `sign(foreignNet) ≠ sign(taiexReturn)` for ≥ 2 consecutive days | RED |
-| 外資期貨 | Futures L/S ratio trending down (3-day MA slope < -0.05) while TAIEX up | YELLOW |
-| 外資選擇權 | Options net OI contradicts TAIEX 5-day direction | YELLOW |
-| 融資券 | Margin balance growing > 1.5% while 外資 net selling | YELLOW |
+| 外資現貨 | `sign(foreignNet) ≠ sign(taiexReturn)` for ≥ 2 consecutive days; skip days where `taiexReturn == 0` (holidays/gaps) | RED |
+| 外資期貨 | `oiLongVolume - oiShortVolume` 3-day MA slope < -0.05 while TAIEX 3-day return > 0 | YELLOW |
+| 外資選擇權 | `oiNetVolume` 5-day trend contradicts TAIEX 5-day direction | YELLOW |
+| 融資券 | `(marginBalance - marginPrevBalance) / marginPrevBalance > 0.015` while `foreignNet < 0` | YELLOW |
 | Combined | 外資現貨 + 期貨 both diverge simultaneously | RED (escalate) |
 | Aligned | All signals consistent with TAIEX | GREEN |
 
@@ -202,6 +205,8 @@ spring:
     ddl-auto: none  # web module never modifies schema
 ```
 
+**Entity/repository scanning:** `eagleeye-domain` already contains `DomainConfiguration` (`@Configuration @EnableJpaRepositories("com.eagleeye.domain.repository")` + `PersistenceManagedTypesScanner` for `com.eagleeye.domain.entity`). Because `eagleeye-web` depends on `eagleeye-domain`, Spring Boot will pick up `DomainConfiguration` automatically via component scan — no additional `@EntityScan` or `@EnableJpaRepositories` needed on `EagleeyeWebApplication`.
+
 Shares database profiles with `eagleeye-collector` (H2 dev, SQLite prod, PostgreSQL enterprise).
 
 ---
@@ -229,14 +234,16 @@ Shares database profiles with `eagleeye-collector` (H2 dev, SQLite prod, Postgre
 
 Chart.js loaded via CDN in `dashboard.html` — no npm/Node.js build step required.
 
+The root `pom.xml` must also declare `eagleeye-web` as a `<module>` entry alongside the existing modules.
+
 ---
 
 ## 9. Testing Strategy
 
 | Layer | Approach |
 |-------|---------|
-| `DashboardService` | Unit tests with mock repositories; verify signal computation and divergence logic |
-| `DashboardController` | `@WebMvcTest` with mocked service; verify template rendering and query param handling |
+| `DashboardService` | Unit tests with mock repositories; key cases: (1) two consecutive spot divergence days → RED alert, (2) futures L/S ratio declining while TAIEX rising → YELLOW, (3) zero taiexReturn day skipped in divergence count |
+| `DashboardController` | `@WebMvcTest` with mocked service; verify template renders, `?days=20/40/60` passes correctly, invalid `days` silently normalizes to 40 |
 | Integration | Manual browser test against local H2 with backfilled data |
 
 ---
