@@ -22,6 +22,7 @@
         <module>eagleeye-domain</module>
         <module>eagleeye-collector</module>
         <module>eagleeye-shell</module>
+        <module>eagleeye-web</module>
     </modules>
 
     <properties>

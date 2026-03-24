@@ -1,0 +1,24 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:h2:file:~/.eagleeye/data/eagleeye
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    ddl-auto: none
+    hibernate:
+      ddl-auto: none
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: jdbc:sqlite:${user.home}/.eagleeye/data/eagleeye.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
