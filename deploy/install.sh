@@ -33,13 +33,31 @@ cp eagleeye-shell/target/eagleeye-shell-*.jar            "$SHELL_DIR/eagleeye-sh
 echo "==> Installing shell wrapper..."
 sudo tee "$BIN_LINK" > /dev/null <<'EOF'
 #!/usr/bin/env bash
-exec java --enable-native-access=ALL-UNNAMED \
-     -jar /opt/eagleeye/shell/eagleeye-shell.jar \
-     --spring.profiles.active=prod \
-     --logging.level.root=WARN \
-     --logging.level.com.eagleeye=WARN \
-     --logging.level.org.springframework=WARN \
-     "$@"
+# eagleeye — interactive or non-interactive depending on whether args are given
+#
+# Interactive:     eagleeye
+# Non-interactive: eagleeye collect --date 2026-05-23
+#                  eagleeye "futures list" --date 2026-05-23
+JAVA="$(command -v java)"
+JAR="/opt/eagleeye/shell/eagleeye-shell.jar"
+JVM_FLAGS=(
+  --enable-native-access=ALL-UNNAMED
+  -Dspring.profiles.active=prod
+  -Dlogging.level.root=WARN
+  -Dlogging.level.com.eagleeye=WARN
+  -Dlogging.level.org.springframework=WARN
+)
+
+if [ $# -gt 0 ]; then
+  exec "$JAVA" "${JVM_FLAGS[@]}" \
+       -Dspring.shell.interactive.enabled=false \
+       -Dspring.main.banner-mode=off \
+       -Dlogging.level.org.jline=ERROR \
+       -jar "$JAR" "$@"
+else
+  exec "$JAVA" "${JVM_FLAGS[@]}" \
+       -jar "$JAR"
+fi
 EOF
 sudo chmod +x "$BIN_LINK"
 

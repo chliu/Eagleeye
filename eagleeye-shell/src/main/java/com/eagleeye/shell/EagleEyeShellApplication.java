@@ -7,6 +7,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class EagleEyeShellApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(EagleEyeShellApplication.class, args);
+        System.exit(SpringApplication.exit(SpringApplication.run(EagleEyeShellApplication.class, args)));
     }
 }
