@@ -34,11 +34,7 @@ public class InstitutionalFlowScheduler {
     public void collect() {
         LocalDate today = LocalDate.now(TAIPEI);
         log.info("=== Institutional flow daily collection triggered for {} ===", today);
-        try {
-            InstitutionalFlowResult result = institutionalFlowService.collectDate(today);
-            log.info("=== Institutional flow collection completed: {} for {} ===", result.status(), today);
-        } catch (Exception e) {
-            log.error("Institutional flow daily collection failed for {}: {}", today, e.getMessage(), e);
-        }
+        InstitutionalFlowResult result = institutionalFlowService.collectDate(today);
+        log.info("=== Institutional flow collection completed: {} for {} ===", result.status(), today);
     }
 }

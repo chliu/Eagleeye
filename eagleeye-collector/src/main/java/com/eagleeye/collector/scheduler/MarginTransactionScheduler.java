@@ -34,11 +34,7 @@ public class MarginTransactionScheduler {
     public void collectMargin() {
         LocalDate today = LocalDate.now(TAIPEI);
         log.info("=== Margin transaction daily collection triggered for {} ===", today);
-        try {
-            MarginCollectionResult result = marginTransactionService.collectDate(today);
-            log.info("=== Margin collection completed: {} for {} ===", result.status(), today);
-        } catch (Exception e) {
-            log.error("Margin daily collection failed for {}: {}", today, e.getMessage(), e);
-        }
+        MarginCollectionResult result = marginTransactionService.collectDate(today);
+        log.info("=== Margin collection completed: {} for {} ===", result.status(), today);
     }
 }

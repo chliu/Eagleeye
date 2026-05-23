@@ -35,11 +35,7 @@ public class CollectionScheduler {
     public void collectDailyData() {
         LocalDate today = LocalDate.now(TAIPEI);
         log.info("=== Daily collection triggered for {} ===", today);
-        try {
-            collectionService.collectAll(today);
-            log.info("=== Daily collection completed for {} ===", today);
-        } catch (Exception e) {
-            log.error("Daily collection failed for {}: {}", today, e.getMessage(), e);
-        }
+        collectionService.collectAll(today);
+        log.info("=== Daily collection completed for {} ===", today);
     }
 }

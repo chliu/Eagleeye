@@ -49,21 +49,21 @@ public class MarginTransactionService {
     }
 
     private void upsert(MarginTransaction parsed) {
-        MarginTransaction bar = repository
+        MarginTransaction existing = repository
                 .findByTradeDate(parsed.getTradeDate())
                 .orElseGet(() -> new MarginTransaction(parsed.getTradeDate()));
 
-        bar.setMarginPurchase(parsed.getMarginPurchase());
-        bar.setMarginSale(parsed.getMarginSale());
-        bar.setMarginCashRedemption(parsed.getMarginCashRedemption());
-        bar.setMarginPrevBalance(parsed.getMarginPrevBalance());
-        bar.setMarginBalance(parsed.getMarginBalance());
-        bar.setShortCovering(parsed.getShortCovering());
-        bar.setShortSale(parsed.getShortSale());
-        bar.setShortStockRedemption(parsed.getShortStockRedemption());
-        bar.setShortPrevBalance(parsed.getShortPrevBalance());
-        bar.setShortBalance(parsed.getShortBalance());
+        existing.setMarginPurchase(parsed.getMarginPurchase());
+        existing.setMarginSale(parsed.getMarginSale());
+        existing.setMarginCashRedemption(parsed.getMarginCashRedemption());
+        existing.setMarginPrevBalance(parsed.getMarginPrevBalance());
+        existing.setMarginBalance(parsed.getMarginBalance());
+        existing.setShortCovering(parsed.getShortCovering());
+        existing.setShortSale(parsed.getShortSale());
+        existing.setShortStockRedemption(parsed.getShortStockRedemption());
+        existing.setShortPrevBalance(parsed.getShortPrevBalance());
+        existing.setShortBalance(parsed.getShortBalance());
 
-        repository.save(bar);
+        repository.save(existing);
     }
 }

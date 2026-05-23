@@ -34,11 +34,7 @@ public class MarketIndexScheduler {
     public void collectTaiex() {
         YearMonth ym = YearMonth.now(TAIPEI);
         log.info("=== TAIEX daily collection triggered for {} ===", ym);
-        try {
-            MarketIndexCollectionResult result = marketIndexService.collectMonth(ym);
-            log.info("=== TAIEX collection completed: {} bars for {} ===", result.barsCount(), ym);
-        } catch (Exception e) {
-            log.error("TAIEX daily collection failed for {}: {}", ym, e.getMessage(), e);
-        }
+        MarketIndexCollectionResult result = marketIndexService.collectMonth(ym);
+        log.info("=== TAIEX collection completed: {} bars for {} ===", result.barsCount(), ym);
     }
 }

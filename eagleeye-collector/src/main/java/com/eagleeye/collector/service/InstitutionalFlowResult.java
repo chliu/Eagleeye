@@ -2,9 +2,6 @@ package com.eagleeye.collector.service;
 
 import java.time.LocalDate;
 
-/**
- * Result of an institutional flow daily collection operation.
- */
 public record InstitutionalFlowResult(
         LocalDate tradeDate,
         Status status,
