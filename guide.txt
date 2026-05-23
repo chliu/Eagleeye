@@ -1,0 +1,165 @@
+EagleEye Usage Guide
+====================
+
+EagleEye is a Taiwan futures market data collector and analyzer.
+It collects data from TAIFEX and provides CLI tools for viewing
+institutional positioning, margin transactions, and market index.
+
+INTERACTIVE SHELL
+-----------------
+  eagleeye              Start interactive shell (REPL mode)
+
+NON-INTERACTIVE (single command)
+---------------------------------
+  eagleeye "<command>"  Run a single command and exit
+
+
+COLLECT
+-------
+Collect all trading data (futures + options) for a given date.
+
+  eagleeye collect
+  eagleeye collect --date 2026-05-23
+
+Options:
+  --date    Trade date (YYYY-MM-DD), default: today
+
+
+FUTURES
+-------
+View institutional futures positioning.
+
+  # List all contracts for a date
+  eagleeye "futures list"
+  eagleeye "futures list" --date 2026-05-20
+
+  # Show trend for a specific contract
+  eagleeye "futures show" --contract TX
+  eagleeye "futures show" --contract MTX --trader FINI
+  eagleeye "futures show" --contract TX --from 2026-04-01 --to 2026-05-23
+
+Options:
+  --contract    Contract code (e.g. TX, MTX)  [required for show]
+  --trader      DEALER | INVESTMENT_TRUST | FINI
+  --from        Start date (YYYY-MM-DD), default: 30 days ago
+  --to          End date (YYYY-MM-DD), default: today
+  --date        Trade date for list command, default: today
+
+
+OPTIONS
+-------
+View institutional options positioning.
+
+  eagleeye "options list"
+  eagleeye "options list" --date 2026-05-20
+
+  eagleeye "options show" --contract TXO
+  eagleeye "options show" --contract TXO --trader INVESTMENT_TRUST
+  eagleeye "options show" --contract TXO --from 2026-04-01 --to 2026-05-23
+
+Options:
+  --contract    Contract code (e.g. TXO)  [required for show]
+  --trader      DEALER | INVESTMENT_TRUST | FINI
+  --from        Start date (YYYY-MM-DD), default: 30 days ago
+  --to          End date (YYYY-MM-DD), default: today
+  --date        Trade date for list command, default: today
+
+
+INSTITUTIONAL FLOW
+------------------
+View institutional buy/sell flow (stocks market).
+
+  eagleeye "institutional-flow list"
+  eagleeye "institutional-flow list" --date 2026-05-20
+
+  eagleeye "institutional-flow show"
+  eagleeye "institutional-flow show" --from 2026-04-01 --to 2026-05-23
+
+  eagleeye "institutional-flow collect" --date 2026-05-23
+  eagleeye "institutional-flow backfill" --from 2026-01-01 --to 2026-05-23
+
+Options:
+  --date        Trade date for list/collect, default: today
+  --from        Start date, default: 30 days ago (show) / 12 months ago (backfill)
+  --to          End date, default: today
+
+
+MARGIN TRANSACTIONS
+-------------------
+View margin buy/sell (信用交易) data.
+
+  eagleeye "margin list"
+  eagleeye "margin list" --date 2026-05-20
+
+  eagleeye "margin show"
+  eagleeye "margin show" --from 2026-04-01 --to 2026-05-23
+
+  eagleeye "margin collect" --date 2026-05-23
+  eagleeye "margin backfill" --from 2026-01-01 --to 2026-05-23
+
+Options:
+  --date        Trade date for list/collect, default: today
+  --from        Start date, default: 30 days ago (show) / 12 months ago (backfill)
+  --to          End date, default: today
+
+
+MARKET INDEX (TAIEX)
+--------------------
+View Taiwan Stock Exchange Capitalization Weighted Stock Index.
+
+  eagleeye "market-index list"
+  eagleeye "market-index list" --date 2026-05-20
+
+  eagleeye "market-index show"
+  eagleeye "market-index show" --from 2026-04-01 --to 2026-05-23
+
+  eagleeye "market-index collect" --date 2026-05-23   # collects entire month
+  eagleeye "market-index backfill" --from 2026-01-01 --to 2026-05-23
+
+Options:
+  --date        Any date in the target month (collect), default: today
+  --from        Start date, default: 30 days ago (show) / 12 months ago (backfill)
+  --to          End date, default: today
+
+
+WEB DASHBOARD
+-------------
+Browser-based chart dashboard with dual-axis Chart.js charts.
+
+  http://localhost:8080/dashboard           # default 40-day view
+  http://localhost:8080/dashboard?days=20
+  http://localhost:8080/dashboard?days=40
+  http://localhost:8080/dashboard?days=60
+
+
+BUILD & INSTALL
+---------------
+  # Build all modules
+  mvn clean install
+
+  # Build collector + shell only (skip tests)
+  mvn package -pl eagleeye-collector,eagleeye-shell -am -DskipTests
+
+  # Install to macOS (copies JARs, registers launchd agent)
+  ./deploy/install.sh
+
+
+LAUNCHD AGENT (macOS)
+---------------------
+The collector runs automatically Mon-Fri at 15:30 Taiwan time.
+
+  # Manual trigger
+  launchctl start com.eagleeye.collector
+
+  # Watch logs
+  tail -f /opt/eagleeye/logs/collector.log
+
+  # Backfill historical data
+  eagleeye-backfill --from 2026-01-01 --to 2026-05-15
+
+
+TRADER TYPES
+------------
+  DEALER              自營商
+  INVESTMENT_TRUST    投信
+  FINI                外資
