@@ -1,7 +1,7 @@
 package com.eagleeye.collector.service;
 
+import com.eagleeye.collector.twse.InstitutionalFlowParser;
 import com.eagleeye.collector.twse.TwseClient;
-import com.eagleeye.collector.twse.TwseParser;
 import com.eagleeye.domain.entity.InstitutionalFlow;
 import com.eagleeye.domain.repository.InstitutionalFlowRepository;
 import org.slf4j.Logger;
@@ -17,14 +17,14 @@ public class InstitutionalFlowService {
     private static final Logger log = LoggerFactory.getLogger(InstitutionalFlowService.class);
 
     private final TwseClient twseClient;
-    private final TwseParser twseParser;
+    private final InstitutionalFlowParser parser;
     private final InstitutionalFlowRepository repository;
 
     public InstitutionalFlowService(TwseClient twseClient,
-                                    TwseParser twseParser,
+                                    InstitutionalFlowParser parser,
                                     InstitutionalFlowRepository repository) {
         this.twseClient = twseClient;
-        this.twseParser = twseParser;
+        this.parser = parser;
         this.repository = repository;
     }
 
@@ -34,7 +34,7 @@ public class InstitutionalFlowService {
             String json = twseClient.fetchInstitutionalFlowJson(date);
             log.debug("Institutional flow raw JSON for {}: {}", date,
                     json != null && json.length() > 300 ? json.substring(0, 300) + "..." : json);
-            InstitutionalFlow parsed = twseParser.parseInstitutionalFlow(json, date);
+            InstitutionalFlow parsed = parser.parse(json, date);
             if (parsed == null) {
                 log.info("No institutional flow data for {}", date);
                 return InstitutionalFlowResult.noData(date);

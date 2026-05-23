@@ -55,7 +55,7 @@ public class MarketIndexCommands {
     public String collect(
             @Option(longName = "date", description = "Trade date YYYY-MM-DD (default: today)", defaultValue = "") String date) {
         LocalDate d = (date == null || date.isEmpty()) ? LocalDate.now() : LocalDate.parse(date);
-        MarketIndexCollectionResult result = marketIndexService.collectDate(d);
+        MarketIndexCollectionResult result = marketIndexService.collectMonthContaining(d);
         return formatResult(result);
     }
 

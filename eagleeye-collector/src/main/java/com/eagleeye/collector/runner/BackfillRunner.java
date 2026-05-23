@@ -2,6 +2,7 @@ package com.eagleeye.collector.runner;
 
 import com.eagleeye.collector.service.CollectionResult;
 import com.eagleeye.collector.service.CollectionService;
+import com.eagleeye.collector.service.CollectionStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -95,8 +96,8 @@ public class BackfillRunner implements ApplicationRunner {
 
     private void printSummary(LocalDate from, LocalDate to, List<CollectionResult> results) {
         long tradeDays  = results.stream().filter(CollectionResult::isTradeDay).count();
-        long holidays   = results.stream().filter(r -> r.status() == CollectionResult.Status.NO_DATA).count();
-        long errors     = results.stream().filter(r -> r.status() == CollectionResult.Status.ERROR).count();
+        long holidays   = results.stream().filter(r -> r.status() == CollectionStatus.NO_DATA).count();
+        long errors     = results.stream().filter(r -> r.status() == CollectionStatus.ERROR).count();
         long totalFut   = results.stream().mapToLong(CollectionResult::futuresCount).sum();
         long totalOpt   = results.stream().mapToLong(CollectionResult::optionsCount).sum();
 

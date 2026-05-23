@@ -1,6 +1,7 @@
 package com.eagleeye.collector.service;
 
 import com.eagleeye.collector.twse.TwseClient;
+import com.eagleeye.collector.service.CollectionStatus;
 import com.eagleeye.domain.entity.InstitutionalFlow;
 import com.eagleeye.domain.repository.InstitutionalFlowRepository;
 import org.junit.jupiter.api.Test;
@@ -59,7 +60,7 @@ class InstitutionalFlowServiceIT {
 
         InstitutionalFlowResult result = service.collectDate(DATE);
 
-        assertThat(result.status()).isEqualTo(InstitutionalFlowResult.Status.COLLECTED);
+        assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
         assertThat(result.tradeDate()).isEqualTo(DATE);
 
         InstitutionalFlow saved = repository.findByTradeDate(DATE).orElseThrow();
@@ -109,7 +110,7 @@ class InstitutionalFlowServiceIT {
 
         InstitutionalFlowResult result = service.collectDate(DATE);
 
-        assertThat(result.status()).isEqualTo(InstitutionalFlowResult.Status.NO_DATA);
+        assertThat(result.status()).isEqualTo(CollectionStatus.NO_DATA);
         assertThat(repository.findByTradeDate(DATE)).isEmpty();
     }
 
@@ -120,7 +121,7 @@ class InstitutionalFlowServiceIT {
 
         InstitutionalFlowResult result = service.collectDate(DATE);
 
-        assertThat(result.status()).isEqualTo(InstitutionalFlowResult.Status.ERROR);
+        assertThat(result.status()).isEqualTo(CollectionStatus.ERROR);
         assertThat(result.errorMessage()).contains("connection timeout");
         assertThat(repository.findByTradeDate(DATE)).isEmpty();
     }

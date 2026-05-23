@@ -117,11 +117,11 @@ class MarketIndexCommandsTest {
 
     @Test
     void collect_defaultsToToday() {
-        when(marketIndexService.collectDate(any()))
+        when(marketIndexService.collectMonthContaining(any()))
                 .thenReturn(MarketIndexCollectionResult.collected(YearMonth.now(), 20));
 
         commands.collect("");
 
-        verify(marketIndexService).collectDate(LocalDate.now());
+        verify(marketIndexService).collectMonthContaining(LocalDate.now());
     }
 }

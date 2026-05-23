@@ -1,7 +1,7 @@
 package com.eagleeye.collector.service;
 
+import com.eagleeye.collector.twse.MarginTransactionParser;
 import com.eagleeye.collector.twse.TwseClient;
-import com.eagleeye.collector.twse.TwseParser;
 import com.eagleeye.domain.entity.MarginTransaction;
 import com.eagleeye.domain.repository.MarginTransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
 class MarginTransactionServiceTest {
 
     @Mock private TwseClient twseClient;
-    @Mock private TwseParser twseParser;
+    @Mock private MarginTransactionParser marginParser;
     @Mock private MarginTransactionRepository repository;
 
     private MarginTransactionService service;
@@ -33,19 +33,19 @@ class MarginTransactionServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new MarginTransactionService(twseClient, twseParser, repository);
+        service = new MarginTransactionService(twseClient, marginParser, repository);
     }
 
     @Test
     void collectDate_success_savesAndReturnsCollected() {
         MarginTransaction bar = new MarginTransaction(DATE);
         when(twseClient.fetchMarginJson(DATE)).thenReturn(MARGIN_JSON);
-        when(twseParser.parseMargin(MARGIN_JSON, DATE)).thenReturn(bar);
+        when(marginParser.parse(MARGIN_JSON, DATE)).thenReturn(bar);
         when(repository.findByTradeDate(DATE)).thenReturn(Optional.empty());
 
         MarginCollectionResult result = service.collectDate(DATE);
 
-        assertThat(result.status()).isEqualTo(MarginCollectionResult.Status.COLLECTED);
+        assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
         assertThat(result.tradeDate()).isEqualTo(DATE);
         verify(repository).save(any(MarginTransaction.class));
     }
@@ -53,11 +53,11 @@ class MarginTransactionServiceTest {
     @Test
     void collectDate_noData_returnsNoData() {
         when(twseClient.fetchMarginJson(DATE)).thenReturn("{\"stat\":\"NO DATA\"}");
-        when(twseParser.parseMargin(any(), eq(DATE))).thenReturn(null);
+        when(marginParser.parse(any(), eq(DATE))).thenReturn(null);
 
         MarginCollectionResult result = service.collectDate(DATE);
 
-        assertThat(result.status()).isEqualTo(MarginCollectionResult.Status.NO_DATA);
+        assertThat(result.status()).isEqualTo(CollectionStatus.NO_DATA);
         verify(repository, never()).save(any());
     }
 
@@ -67,7 +67,7 @@ class MarginTransactionServiceTest {
 
         MarginCollectionResult result = service.collectDate(DATE);
 
-        assertThat(result.status()).isEqualTo(MarginCollectionResult.Status.ERROR);
+        assertThat(result.status()).isEqualTo(CollectionStatus.ERROR);
         assertThat(result.errorMessage()).contains("timeout");
         verify(repository, never()).save(any());
     }
@@ -80,7 +80,7 @@ class MarginTransactionServiceTest {
         parsed.setShortBalance(204_948L);
 
         when(twseClient.fetchMarginJson(DATE)).thenReturn(MARGIN_JSON);
-        when(twseParser.parseMargin(MARGIN_JSON, DATE)).thenReturn(parsed);
+        when(marginParser.parse(MARGIN_JSON, DATE)).thenReturn(parsed);
         when(repository.findByTradeDate(DATE)).thenReturn(Optional.of(existing));
 
         service.collectDate(DATE);

@@ -1,5 +1,6 @@
 package com.eagleeye.collector.runner;
 
+import com.eagleeye.collector.service.CollectionStatus;
 import com.eagleeye.collector.service.MarketIndexCollectionResult;
 import com.eagleeye.collector.service.MarketIndexService;
 import org.slf4j.Logger;
@@ -82,8 +83,8 @@ public class MarketIndexBackfillRunner implements ApplicationRunner {
 
     private void printSummary(YearMonth from, YearMonth to, List<MarketIndexCollectionResult> results) {
         long collected = results.stream().filter(MarketIndexCollectionResult::isTradeMonth).count();
-        long noData    = results.stream().filter(r -> r.status() == MarketIndexCollectionResult.Status.NO_DATA).count();
-        long errors    = results.stream().filter(r -> r.status() == MarketIndexCollectionResult.Status.ERROR).count();
+        long noData    = results.stream().filter(r -> r.status() == CollectionStatus.NO_DATA).count();
+        long errors    = results.stream().filter(r -> r.status() == CollectionStatus.ERROR).count();
         long totalBars = results.stream().mapToLong(MarketIndexCollectionResult::barsCount).sum();
 
         System.out.printf("""

@@ -1,7 +1,7 @@
 package com.eagleeye.collector.service;
 
+import com.eagleeye.collector.twse.TaiexIndexParser;
 import com.eagleeye.collector.twse.TwseClient;
-import com.eagleeye.collector.twse.TwseParser;
 import com.eagleeye.domain.entity.TaiexIndex;
 import com.eagleeye.domain.repository.TaiexIndexRepository;
 import org.slf4j.Logger;
@@ -20,14 +20,14 @@ public class MarketIndexService {
     private static final Logger log = LoggerFactory.getLogger(MarketIndexService.class);
 
     private final TwseClient twseClient;
-    private final TwseParser twseParser;
+    private final TaiexIndexParser parser;
     private final TaiexIndexRepository repository;
 
     public MarketIndexService(TwseClient twseClient,
-                              TwseParser twseParser,
+                              TaiexIndexParser parser,
                               TaiexIndexRepository repository) {
         this.twseClient = twseClient;
-        this.twseParser = twseParser;
+        this.parser = parser;
         this.repository = repository;
     }
 
@@ -35,7 +35,7 @@ public class MarketIndexService {
     public MarketIndexCollectionResult collectMonth(YearMonth yearMonth) {
         try {
             String ohlcJson = twseClient.fetchMonthJson(yearMonth);
-            List<TaiexIndex> bars = twseParser.parse(ohlcJson);
+            List<TaiexIndex> bars = parser.parse(ohlcJson);
 
             if (bars.isEmpty()) {
                 log.info("No TAIEX data for {} — skipping", yearMonth);
@@ -43,7 +43,7 @@ public class MarketIndexService {
             }
 
             String statsJson = twseClient.fetchMarketStatsJson(yearMonth);
-            Map<LocalDate, long[]> volumeByDate = twseParser.parseVolumeByDate(statsJson);
+            Map<LocalDate, long[]> volumeByDate = parser.parseVolumeByDate(statsJson);
             bars.forEach(bar -> {
                 long[] vt = volumeByDate.get(bar.getTradeDate());
                 if (vt != null) {
@@ -62,7 +62,7 @@ public class MarketIndexService {
         }
     }
 
-    public MarketIndexCollectionResult collectDate(LocalDate date) {
+    public MarketIndexCollectionResult collectMonthContaining(LocalDate date) {
         return collectMonth(YearMonth.from(date));
     }
 

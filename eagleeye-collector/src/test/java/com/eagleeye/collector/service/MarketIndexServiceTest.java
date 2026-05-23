@@ -1,7 +1,7 @@
 package com.eagleeye.collector.service;
 
+import com.eagleeye.collector.twse.TaiexIndexParser;
 import com.eagleeye.collector.twse.TwseClient;
-import com.eagleeye.collector.twse.TwseParser;
 import com.eagleeye.domain.entity.TaiexIndex;
 import com.eagleeye.domain.repository.TaiexIndexRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +32,6 @@ class MarketIndexServiceTest {
 
     private static final YearMonth MARCH_2026 = YearMonth.of(2026, 3);
 
-    // Use Jackson 3.x ObjectMapper for the real parser
     private static final String ONE_BAR_JSON = """
             {
               "stat": "OK",
@@ -55,16 +54,15 @@ class MarketIndexServiceTest {
             { "stat": "OK", "data": [] }
             """;
 
-    @BeforeEach
-    void setUp() {
-        // Use real TwseParser with Jackson 3.x ObjectMapper
-        TwseParser realParser = new TwseParser(new tools.jackson.databind.ObjectMapper());
-        service = new MarketIndexService(twseClient, realParser, repository);
-    }
-
     private static final String NO_STATS_JSON = """
             { "stat": "NO DATA", "data": [] }
             """;
+
+    @BeforeEach
+    void setUp() {
+        TaiexIndexParser realParser = new TaiexIndexParser(new tools.jackson.databind.ObjectMapper());
+        service = new MarketIndexService(twseClient, realParser, repository);
+    }
 
     @Test
     void collectMonth_whenDataPresent_upsertsBarAndReturnsCollected() {
@@ -74,7 +72,7 @@ class MarketIndexServiceTest {
 
         MarketIndexCollectionResult result = service.collectMonth(MARCH_2026);
 
-        assertThat(result.status()).isEqualTo(MarketIndexCollectionResult.Status.COLLECTED);
+        assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
         assertThat(result.barsCount()).isEqualTo(1);
         assertThat(result.yearMonth()).isEqualTo(MARCH_2026);
         verify(repository, times(1)).save(any(TaiexIndex.class));
@@ -86,7 +84,7 @@ class MarketIndexServiceTest {
 
         MarketIndexCollectionResult result = service.collectMonth(MARCH_2026);
 
-        assertThat(result.status()).isEqualTo(MarketIndexCollectionResult.Status.NO_DATA);
+        assertThat(result.status()).isEqualTo(CollectionStatus.NO_DATA);
         assertThat(result.barsCount()).isEqualTo(0);
         verify(repository, never()).save(any());
     }
@@ -97,21 +95,21 @@ class MarketIndexServiceTest {
 
         MarketIndexCollectionResult result = service.collectMonth(MARCH_2026);
 
-        assertThat(result.status()).isEqualTo(MarketIndexCollectionResult.Status.ERROR);
+        assertThat(result.status()).isEqualTo(CollectionStatus.ERROR);
         assertThat(result.errorMessage()).contains("connection timeout");
         verify(repository, never()).save(any());
     }
 
     @Test
-    void collectDate_delegatesToCollectMonth() {
+    void collectMonthContaining_delegatesToCollectMonth() {
         when(twseClient.fetchMonthJson(MARCH_2026)).thenReturn(ONE_BAR_JSON);
         when(twseClient.fetchMarketStatsJson(MARCH_2026)).thenReturn(NO_STATS_JSON);
         when(repository.findByTradeDate(any())).thenReturn(Optional.empty());
 
-        MarketIndexCollectionResult result = service.collectDate(LocalDate.of(2026, 3, 15));
+        MarketIndexCollectionResult result = service.collectMonthContaining(LocalDate.of(2026, 3, 15));
 
         assertThat(result.yearMonth()).isEqualTo(MARCH_2026);
-        assertThat(result.status()).isEqualTo(MarketIndexCollectionResult.Status.COLLECTED);
+        assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
         verify(twseClient, times(1)).fetchMonthJson(MARCH_2026);
     }
 

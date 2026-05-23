@@ -1,7 +1,7 @@
 package com.eagleeye.collector.service;
 
+import com.eagleeye.collector.twse.InstitutionalFlowParser;
 import com.eagleeye.collector.twse.TwseClient;
-import com.eagleeye.collector.twse.TwseParser;
 import com.eagleeye.domain.entity.InstitutionalFlow;
 import com.eagleeye.domain.repository.InstitutionalFlowRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
 class InstitutionalFlowServiceTest {
 
     @Mock private TwseClient twseClient;
-    @Mock private TwseParser twseParser;
+    @Mock private InstitutionalFlowParser flowParser;
     @Mock private InstitutionalFlowRepository repository;
 
     private InstitutionalFlowService service;
@@ -33,19 +33,19 @@ class InstitutionalFlowServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new InstitutionalFlowService(twseClient, twseParser, repository);
+        service = new InstitutionalFlowService(twseClient, flowParser, repository);
     }
 
     @Test
     void collectDate_success_savesAndReturnsCollected() {
         InstitutionalFlow flow = new InstitutionalFlow(DATE);
         when(twseClient.fetchInstitutionalFlowJson(DATE)).thenReturn(FLOW_JSON);
-        when(twseParser.parseInstitutionalFlow(FLOW_JSON, DATE)).thenReturn(flow);
+        when(flowParser.parse(FLOW_JSON, DATE)).thenReturn(flow);
         when(repository.findByTradeDate(DATE)).thenReturn(Optional.empty());
 
         InstitutionalFlowResult result = service.collectDate(DATE);
 
-        assertThat(result.status()).isEqualTo(InstitutionalFlowResult.Status.COLLECTED);
+        assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
         assertThat(result.tradeDate()).isEqualTo(DATE);
         verify(repository).save(any(InstitutionalFlow.class));
     }
@@ -53,11 +53,11 @@ class InstitutionalFlowServiceTest {
     @Test
     void collectDate_noData_returnsNoData() {
         when(twseClient.fetchInstitutionalFlowJson(DATE)).thenReturn("{\"stat\":\"NO DATA\"}");
-        when(twseParser.parseInstitutionalFlow(any(), eq(DATE))).thenReturn(null);
+        when(flowParser.parse(any(), eq(DATE))).thenReturn(null);
 
         InstitutionalFlowResult result = service.collectDate(DATE);
 
-        assertThat(result.status()).isEqualTo(InstitutionalFlowResult.Status.NO_DATA);
+        assertThat(result.status()).isEqualTo(CollectionStatus.NO_DATA);
         verify(repository, never()).save(any());
     }
 
@@ -67,7 +67,7 @@ class InstitutionalFlowServiceTest {
 
         InstitutionalFlowResult result = service.collectDate(DATE);
 
-        assertThat(result.status()).isEqualTo(InstitutionalFlowResult.Status.ERROR);
+        assertThat(result.status()).isEqualTo(CollectionStatus.ERROR);
         assertThat(result.errorMessage()).contains("timeout");
         verify(repository, never()).save(any());
     }
@@ -80,7 +80,7 @@ class InstitutionalFlowServiceTest {
         parsed.setForeignNet(-5_000_000_000L);
 
         when(twseClient.fetchInstitutionalFlowJson(DATE)).thenReturn(FLOW_JSON);
-        when(twseParser.parseInstitutionalFlow(FLOW_JSON, DATE)).thenReturn(parsed);
+        when(flowParser.parse(FLOW_JSON, DATE)).thenReturn(parsed);
         when(repository.findByTradeDate(DATE)).thenReturn(Optional.of(existing));
 
         service.collectDate(DATE);
