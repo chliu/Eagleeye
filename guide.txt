@@ -132,30 +132,80 @@ Browser-based chart dashboard with dual-axis Chart.js charts.
   http://localhost:8080/dashboard?days=60
 
 
-BUILD & INSTALL
----------------
-  # Build all modules
-  mvn clean install
+SETUP (macOS)
+-------------
+Prerequisites: Java 25, Maven 3.9+
 
-  # Build collector + shell only (skip tests)
-  mvn package -pl eagleeye-collector,eagleeye-shell -am -DskipTests
+  # Verify Java version
+  java -version        # should show 25
 
-  # Install to macOS (copies JARs, registers launchd agent)
-  ./deploy/install.sh
+1. Clone or update the repo, then install in one command:
+
+     cd /path/to/Eagleeye
+     ./deploy/install.sh
+
+   The script:
+     - Builds eagleeye-collector and eagleeye-shell JARs
+     - Copies JARs to /opt/eagleeye/
+     - Creates data directory at ~/.eagleeye/data/
+     - Installs CLI commands: eagleeye, eagleeye-backfill
+     - Registers a launchd agent (auto-starts on login)
+
+2. Verify the agent is registered:
+
+     launchctl list | grep eagleeye
+     # Should show: com.eagleeye.collector
+
+3. Backfill historical data before first use:
+
+     eagleeye-backfill --from 2025-01-01 --to 2026-05-23
 
 
-LAUNCHD AGENT (macOS)
----------------------
-The collector runs automatically Mon-Fri at 15:30 Taiwan time.
+AUTOMATIC COLLECTION (macOS launchd)
+-------------------------------------
+The collector runs Mon-Fri using macOS launchd — a fresh JVM starts
+at each scheduled time, collects data, and exits. It does NOT run 24/7.
 
-  # Manual trigger
+Collection schedule (Taiwan time, UTC+8):
+  15:30  Institutional flow + margin transactions   (TWSE)
+  16:15  Futures + options positions                (TAIFEX)
+  18:00  TAIEX market index                         (TWSE)
+
+Control commands:
+
+  # Trigger collection now (without waiting for schedule)
   launchctl start com.eagleeye.collector
 
-  # Watch logs
-  tail -f /opt/eagleeye/logs/collector.log
+  # Stop a running collection
+  launchctl stop com.eagleeye.collector
 
-  # Backfill historical data
-  eagleeye-backfill --from 2026-01-01 --to 2026-05-15
+  # Check status
+  launchctl list | grep eagleeye
+
+  # View logs (live)
+  tail -f /opt/eagleeye/logs/collector.log
+  tail -f /opt/eagleeye/logs/collector-error.log
+
+  # Reinstall after code changes
+  ./deploy/install.sh
+
+  # Uninstall (preserves data at ~/.eagleeye)
+  ./deploy/uninstall.sh
+
+  # Remove data as well
+  rm -rf ~/.eagleeye
+
+
+BACKFILL
+--------
+Collect historical data for a date range (runs once and exits).
+
+  eagleeye-backfill --from 2025-01-01 --to 2026-05-23
+
+  # Dry-run to check date range
+  eagleeye-backfill --from 2026-05-01 --to 2026-05-23
+
+Data is stored at: ~/.eagleeye/data/eagleeye.db (SQLite, prod profile)
 
 
 TRADER TYPES
