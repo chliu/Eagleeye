@@ -67,12 +67,14 @@ sudo cp "$(dirname "$0")/eagleeye-backfill.sh" "$BACKFILL_LINK"
 sudo chmod +x "$BACKFILL_LINK"
 
 # ── 5. Detect Java home for plist ─────────────────────────────────────────────
-JAVA_HOME_VAL="$(/usr/libexec/java_home 2>/dev/null || echo '/usr/local/opt/openjdk')"
+# Use the java on PATH (handles SDKMAN, Homebrew, etc.) rather than
+# /usr/libexec/java_home which only sees JVMs in /Library/Java.
+JAVA_BIN="$(command -v java)"
+JAVA_HOME_VAL="$(cd "$(dirname "$JAVA_BIN")/.." && pwd)"
 
 # ── 6. Install launchd plist ──────────────────────────────────────────────────
 echo "==> Installing launchd agent..."
-sed "s|/usr/local/opt/openjdk@25|$JAVA_HOME_VAL|g" "$PLIST_SRC" \
-  | sed "s|$JAVA_HOME_VAL/bin/java|$JAVA_HOME_VAL/bin/java|g" > "$PLIST_DST"
+sed "s|/usr/local/opt/openjdk@25|$JAVA_HOME_VAL|g" "$PLIST_SRC" > "$PLIST_DST"
 
 # Reload if already loaded
 launchctl bootout "gui/$(id -u)/com.eagleeye.collector" 2>/dev/null || true
