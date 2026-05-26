@@ -7,20 +7,22 @@ set -euo pipefail
 INSTALL_DIR="/opt/eagleeye"
 COLLECTOR_DIR="$INSTALL_DIR/collector"
 SHELL_DIR="$INSTALL_DIR/shell"
+WEB_DIR="$INSTALL_DIR/web"
 LOG_DIR="$INSTALL_DIR/logs"
 DATA_DIR="$HOME/.eagleeye/data"
 PLIST_SRC="$(dirname "$0")/com.eagleeye.collector.plist"
 PLIST_DST="$HOME/Library/LaunchAgents/com.eagleeye.collector.plist"
 BIN_LINK="/usr/local/bin/eagleeye"
 BACKFILL_LINK="/usr/local/bin/eagleeye-backfill"
+WEB_LINK="/usr/local/bin/eagleeye-web"
 
 # ── 1. Build ──────────────────────────────────────────────────────────────────
 echo "==> Building JARs..."
-mvn package -pl eagleeye-collector,eagleeye-shell -am -DskipTests -q
+mvn package -pl eagleeye-collector,eagleeye-shell,eagleeye-web -am -DskipTests -q
 
 # ── 2. Create directories ─────────────────────────────────────────────────────
 echo "==> Creating directories..."
-sudo mkdir -p "$COLLECTOR_DIR" "$SHELL_DIR" "$LOG_DIR"
+sudo mkdir -p "$COLLECTOR_DIR" "$SHELL_DIR" "$WEB_DIR" "$LOG_DIR"
 sudo chown -R "$(whoami)" "$INSTALL_DIR"
 mkdir -p "$DATA_DIR"
 
@@ -28,6 +30,7 @@ mkdir -p "$DATA_DIR"
 echo "==> Installing JARs..."
 cp eagleeye-collector/target/eagleeye-collector-*-exec.jar "$COLLECTOR_DIR/eagleeye-collector.jar"
 cp eagleeye-shell/target/eagleeye-shell-*.jar            "$SHELL_DIR/eagleeye-shell.jar"
+cp eagleeye-web/target/eagleeye-web-*-exec.jar           "$WEB_DIR/eagleeye-web.jar"
 
 # ── 4. Shell wrapper ──────────────────────────────────────────────────────────
 echo "==> Installing shell wrapper..."
@@ -61,10 +64,15 @@ fi
 EOF
 sudo chmod +x "$BIN_LINK"
 
-# ── 5b. Backfill wrapper ───────────────────────────────────────────────────────
+# ── 5b. Backfill wrapper ──────────────────────────────────────────────────────
 echo "==> Installing backfill wrapper..."
 sudo cp "$(dirname "$0")/eagleeye-backfill.sh" "$BACKFILL_LINK"
 sudo chmod +x "$BACKFILL_LINK"
+
+# ── 5c. Web wrapper ───────────────────────────────────────────────────────────
+echo "==> Installing web wrapper..."
+sudo cp "$(dirname "$0")/eagleeye-web.sh" "$WEB_LINK"
+sudo chmod +x "$WEB_LINK"
 
 # ── 5. Detect Java home for plist ─────────────────────────────────────────────
 # Use the java on PATH (handles SDKMAN, Homebrew, etc.) rather than
@@ -87,4 +95,5 @@ echo "  Collector runs automatically Mon–Fri at 15:30 Taiwan time."
 echo "  Manual trigger:  launchctl start com.eagleeye.collector"
 echo "  Logs:            tail -f $LOG_DIR/collector.log"
 echo "  Shell:           eagleeye"
-echo "  Backfill:        eagleeye-backfill --from 2026-01-01 --to 2026-03-15"
+echo "  Backfill:        eagleeye-backfill --from 2026-01-01 --to 2026-03-15
+  Dashboard:       eagleeye-web"
