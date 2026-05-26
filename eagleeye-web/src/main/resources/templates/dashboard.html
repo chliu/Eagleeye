@@ -7,62 +7,131 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #f0f0f0; color: #222; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; }
 
+:root {
+  --bg:       #1a1a1a;
+  --surface:  #222222;
+  --border:   #333333;
+  --text:     #e0e0e0;
+  --muted:    #888888;
+  --amber:    #d97706;
+  --amber-dim:#92510440;
+  --red:      #ef4444;
+  --red-dim:  rgba(239,68,68,0.25);
+  --green:    #22c55e;
+  --green-dim:rgba(34,197,94,0.25);
+  --grid:     #2a2a2a;
+  --mono:     'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'SF Mono', monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
 .header {
-  background: #fff;
-  border-bottom: 1px solid #d0d0d0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
 }
 .header-inner {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 10px 14px;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
-.header-title { font-size: 15px; font-weight: 700; color: #1a237e; }
-.header-sub   { font-size: 11px; color: #777; margin-top: 2px; }
-
-.range-toggle { display: flex; gap: 6px; }
-.range-btn {
-  background: #f0f0f0;
-  border: 1px solid #bbb;
-  color: #555;
-  padding: 4px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  text-decoration: none;
-  transition: background 0.15s;
+.header-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--amber);
+  letter-spacing: 0.5px;
 }
-.range-btn:hover:not(.active) { background: #e0e0e0; }
-.range-btn.active { background: #1565c0; border-color: #1565c0; color: #fff; }
+.header-title span { color: var(--muted); font-weight: 400; }
+.header-sub { font-size: 10px; color: var(--muted); margin-top: 3px; }
 
-.container { max-width: 1100px; margin: 0 auto; padding: 14px; }
+/* ── Range toggle ───────────────────────────────────────────────────── */
+.range-toggle { display: flex; gap: 4px; }
+.range-btn {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 3px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--mono);
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+.range-btn:hover:not(.active) { border-color: var(--amber); color: var(--amber); }
+.range-btn.active { border-color: var(--amber); color: var(--amber); background: var(--amber-dim); }
+
+/* ── Layout ─────────────────────────────────────────────────────────── */
+.container { max-width: 1200px; margin: 0 auto; padding: 14px 16px; }
+
 .chart-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 10px;
 }
+
 .chart-card {
-  background: #fff;
-  border: 1px solid #d0d0d0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 12px 14px 10px;
 }
+
 .chart-title {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
-  color: #333;
-  text-align: center;
-  margin-bottom: 8px;
-  letter-spacing: 0.3px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 10px;
 }
 
 @media (max-width: 800px) {
   .chart-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Delta table ────────────────────────────────────────────────────── */
+.delta-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  font-family: var(--mono);
+}
+.delta-table th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+}
+.delta-table th:first-child { text-align: left; }
+.delta-table td {
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--grid);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.delta-table td:first-child { text-align: left; color: var(--muted); }
+.delta-table tr:first-child td { color: var(--text); background: #282828; }
+.delta-table tr:hover td { background: #282828; }
+
+.up   { color: var(--red); }
+.down { color: var(--green); }
+.neu  { color: var(--muted); }
+.settle { color: var(--amber); }
 </style>
 </head>
 <body>
@@ -70,13 +139,13 @@ body { background: #f0f0f0; color: #222; font-family: -apple-system, BlinkMacSys
 <div class="header">
   <div class="header-inner">
     <div>
-      <div class="header-title">EagleEye — 外資追蹤儀表板</div>
-      <div class="header-sub">外資現貨 / 期貨 / 選擇權 / 融資券 vs 加權指數</div>
+      <div class="header-title">EagleEye <span>/ 外資追蹤儀表板</span></div>
+      <div class="header-sub">外資現貨 · 期貨 · 選擇權 · 融資券 vs 加權指數</div>
     </div>
     <div class="range-toggle">
-      <a th:href="@{/dashboard(days=20)}" class="range-btn" th:classappend="${vm.days == 20} ? ' active'">20天</a>
-      <a th:href="@{/dashboard(days=40)}" class="range-btn" th:classappend="${vm.days == 40} ? ' active'">40天</a>
-      <a th:href="@{/dashboard(days=60)}" class="range-btn" th:classappend="${vm.days == 60} ? ' active'">60天</a>
+      <a th:href="@{/dashboard(days=20)}" class="range-btn" th:classappend="${vm.days == 20} ? ' active'">20d</a>
+      <a th:href="@{/dashboard(days=40)}" class="range-btn" th:classappend="${vm.days == 40} ? ' active'">40d</a>
+      <a th:href="@{/dashboard(days=60)}" class="range-btn" th:classappend="${vm.days == 60} ? ' active'">60d</a>
     </div>
   </div>
 </div>
@@ -105,10 +174,17 @@ body { background: #f0f0f0; color: #222; font-family: -apple-system, BlinkMacSys
     </div>
 
   </div>
-</div><!-- .container -->
+
+  <div class="chart-card" style="margin-top:10px;">
+    <div class="chart-title">外資期貨日增減（多單 vs 空單）</div>
+    <div id="futuresDeltaTable"></div>
+  </div>
+
+</div>
 
 <script th:inline="javascript">
 /*<![CDATA[*/
+const isoDates      = /*[[${vm.isoDates}]]*/ [];
 const labels        = /*[[${vm.dateLabels}]]*/ [];
 const taiexData     = /*[[${vm.taiexClose}]]*/ [];
 const spotNet       = /*[[${vm.spotNetFlow}]]*/ [];
@@ -119,16 +195,19 @@ const futShort      = /*[[${vm.futuresShortOI}]]*/ [];
 const optCall       = /*[[${vm.optionsCallOI}]]*/ [];
 const optPut        = /*[[${vm.optionsPutOI}]]*/ [];
 
-const TAIEX_COLOR = '#1565c0';
-const RED         = 'rgba(198,40,40,0.85)';
-const GREEN       = 'rgba(46,125,50,0.85)';
-const GRID        = '#e8e8e8';
+const AMBER   = '#d97706';
+const RED     = 'rgba(239,68,68,0.8)';
+const RED_DIM = 'rgba(239,68,68,0.3)';
+const GREEN   = 'rgba(34,197,94,0.8)';
+const GRN_DIM = 'rgba(34,197,94,0.3)';
+const GRID    = '#2a2a2a';
+const TEXT    = '#888888';
 
 function taiexDs() {
   return {
     type: 'line', label: '加權指數',
     data: taiexData,
-    borderColor: TAIEX_COLOR, borderWidth: 1.5,
+    borderColor: AMBER, borderWidth: 1.5,
     pointRadius: 0, tension: 0.2,
     yAxisID: 'y2', fill: false, order: 0
   };
@@ -142,23 +221,32 @@ function opts(yFmt) {
     plugins: {
       legend: {
         display: true, position: 'bottom',
-        labels: { boxWidth: 12, font: { size: 10 }, color: '#444', padding: 10 }
+        labels: { boxWidth: 10, font: { size: 10, family: "'JetBrains Mono', monospace" }, color: TEXT, padding: 12 }
+      },
+      tooltip: {
+        backgroundColor: '#2a2a2a',
+        borderColor: '#444',
+        borderWidth: 1,
+        titleColor: '#e0e0e0',
+        bodyColor: '#aaa',
+        titleFont: { family: "'JetBrains Mono', monospace", size: 11 },
+        bodyFont:  { family: "'JetBrains Mono', monospace", size: 11 }
       }
     },
     scales: {
       x: {
-        ticks: { color: '#666', font: { size: 9 }, maxRotation: 45, maxTicksLimit: 12 },
+        ticks: { color: TEXT, font: { size: 9 }, maxRotation: 45, maxTicksLimit: 12 },
         grid: { color: GRID }
       },
       y: {
         position: 'left',
-        ticks: { color: '#555', font: { size: 9 }, callback: yFmt },
+        ticks: { color: TEXT, font: { size: 9 }, callback: yFmt },
         grid: { color: GRID }
       },
       y2: {
         position: 'right',
         ticks: {
-          color: TAIEX_COLOR, font: { size: 9 },
+          color: AMBER, font: { size: 9 },
           callback: v => v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v
         },
         grid: { drawOnChartArea: false }
@@ -171,14 +259,13 @@ const fmtYi = v => {
   const yi = v / 1e8;
   return (yi >= 0 ? '+' : '') + yi.toFixed(1);
 };
-
 const fmtThousand = v => {
   if (Math.abs(v) >= 10000) return (v / 10000).toFixed(1) + 'W';
   if (Math.abs(v) >= 1000)  return (v / 1000).toFixed(1) + 'K';
   return String(v);
 };
 
-// Chart 1: 外資買賣超 — single bar, red=buy / green=sell
+// Chart 1: 外資買賣超
 new Chart(document.getElementById('spotChart'), {
   data: {
     labels,
@@ -195,7 +282,7 @@ new Chart(document.getElementById('spotChart'), {
   options: opts(fmtYi)
 });
 
-// Chart 2: 資券變化 — margin delta (red) + short delta (green)
+// Chart 2: 資券變化
 new Chart(document.getElementById('marginChart'), {
   data: {
     labels,
@@ -208,7 +295,12 @@ new Chart(document.getElementById('marginChart'), {
   options: opts(fmtThousand)
 });
 
-// Chart 3: 外資期貨部位 — long OI (red, positive) + short OI (green, negative)
+function delta(arr) {
+  return arr.map((v, i) => i === 0 ? 0 : v - arr[i - 1]);
+}
+const RED_POS = RED, RED_NEG = RED_DIM, GREEN_POS = GREEN, GREEN_NEG = GRN_DIM;
+
+// Chart 3: 外資期貨部位
 new Chart(document.getElementById('futuresChart'), {
   data: {
     labels,
@@ -221,7 +313,7 @@ new Chart(document.getElementById('futuresChart'), {
   options: opts(fmtThousand)
 });
 
-// Chart 4: 外資選擇權 — call OI (red, positive) + put OI (green, negative)
+// Chart 4: 外資選擇權
 new Chart(document.getElementById('optionsChart'), {
   data: {
     labels,
@@ -233,6 +325,57 @@ new Chart(document.getElementById('optionsChart'), {
   },
   options: opts(fmtThousand)
 });
+
+// 台指期結算日 = 每月第三個週三 (day 15–21, weekday=3)
+function isSettlement(iso) {
+  const d = new Date(iso + 'T00:00:00');
+  const dom = d.getDate();
+  return d.getDay() === 3 && dom >= 15 && dom <= 21;
+}
+
+// Table 5: 外資期貨日增減
+const futLongDelta  = delta(futLong);
+const futShortDelta = delta(futShort);
+
+function fmtDelta(v, i) {
+  if (i === 0) return '<span class="neu">—</span>';
+  const cls = v > 0 ? 'up' : v < 0 ? 'down' : 'neu';
+  return `<span class="${cls}">${v > 0 ? '+' : ''}${v.toLocaleString()}</span>`;
+}
+function fmtNet(v) {
+  const cls = v > 0 ? 'up' : v < 0 ? 'down' : 'neu';
+  return `<span class="${cls}">${v > 0 ? '+' : ''}${v.toLocaleString()}</span>`;
+}
+
+(function buildTable() {
+  const rows = labels.map((lbl, i) => {
+    const settle = isSettlement(isoDates[i]);
+    return {
+      lbl: settle ? `<span class="settle">${lbl} *</span>` : lbl,
+      long: futLong[i], longD: futLongDelta[i],
+      short: futShort[i], shortD: futShortDelta[i],
+      net: futLong[i] - futShort[i], i
+    };
+  }).reverse();
+
+  const html = `<table class="delta-table">
+    <thead><tr>
+      <th>日期</th>
+      <th>多單</th><th>Δ多單</th>
+      <th>空單</th><th>Δ空單</th>
+      <th>淨部位</th>
+    </tr></thead>
+    <tbody>${rows.map(r => `<tr>
+      <td>${r.lbl}</td>
+      <td>${r.long.toLocaleString()}</td>
+      <td>${fmtDelta(r.longD, r.i)}</td>
+      <td>${r.short.toLocaleString()}</td>
+      <td>${fmtDelta(r.shortD, r.i)}</td>
+      <td>${fmtNet(r.net)}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+  document.getElementById('futuresDeltaTable').innerHTML = html;
+})();
 /*]]>*/
 </script>
 

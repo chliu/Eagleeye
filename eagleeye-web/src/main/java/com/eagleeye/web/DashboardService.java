@@ -61,6 +61,7 @@ public class DashboardService {
         int start = Math.max(0, alignedDates.size() - days);
         List<LocalDate> dates = alignedDates.subList(start, alignedDates.size());
 
+        List<String> isoDates       = new ArrayList<>();
         List<String> dateLabels     = new ArrayList<>();
         List<Double> taiexClose     = new ArrayList<>();
         List<Long>   spotNetFlow    = new ArrayList<>();
@@ -78,6 +79,7 @@ public class DashboardService {
             OptionsPosition   op = optMap.get(date);
             MarginTransaction mg = mgnMap.get(date);
 
+            isoDates.add(date.toString());
             dateLabels.add(date.format(LABEL_FMT));
             taiexClose.add(ti.getClose() / 100.0);
 
@@ -99,7 +101,7 @@ public class DashboardService {
         }
 
         return new DashboardViewModel(
-            dateLabels, taiexClose, spotNetFlow,
+            isoDates, dateLabels, taiexClose, spotNetFlow,
             marginChange, shortChange,
             futuresLongOI, futuresShortOI,
             optionsCallOI, optionsPutOI,
