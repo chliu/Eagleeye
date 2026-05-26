@@ -10,10 +10,9 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 
 /**
- * Triggers daily data collection at 16:15 Taipei time (Asia/Taipei).
+ * Triggers daily data collection at 14:30 Taipei time (Asia/Taipei).
  *
- * TAIFEX publishes full institutional data (including block trades and offshore ETFs)
- * at ~16:15 after the 13:45 market close. This is the recommended collection window.
+ * TAIFEX publishes institutional OI data at ~14:30 after the 13:45 market close.
  */
 @Component
 public class CollectionScheduler {
@@ -28,10 +27,10 @@ public class CollectionScheduler {
     }
 
     /**
-     * Runs Monday–Friday at 16:15 Taipei time.
+     * Runs Monday–Friday at 14:30 Taipei time.
      * Cron format: second minute hour day month weekday
      */
-    @Scheduled(cron = "0 15 16 * * MON-FRI", zone = "Asia/Taipei")
+    @Scheduled(cron = "0 30 14 * * MON-FRI", zone = "Asia/Taipei")
     public void collectDailyData() {
         LocalDate today = LocalDate.now(TAIPEI);
         log.info("=== Daily collection triggered for {} ===", today);
