@@ -7,214 +7,231 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #0d1117; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; }
-.header { background: #161b22; border-bottom: 1px solid #30363d; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
-.header-title { font-size: 15px; font-weight: 600; color: #58a6ff; }
-.header-subtitle { font-size: 11px; color: #8b949e; margin-top: 2px; }
+body { background: #f0f0f0; color: #222; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; }
+
+.header {
+  background: #fff;
+  border-bottom: 1px solid #d0d0d0;
+}
+.header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-title { font-size: 15px; font-weight: 700; color: #1a237e; }
+.header-sub   { font-size: 11px; color: #777; margin-top: 2px; }
+
 .range-toggle { display: flex; gap: 6px; }
-.range-btn { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 4px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; text-decoration: none; }
-.range-btn.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
-.alert-bar { background: #161b22; border-bottom: 1px solid #30363d; padding: 8px 20px; display: flex; align-items: center; flex-wrap: wrap; gap: 16px; min-height: 36px; }
-.alert-label { font-size: 11px; color: #8b949e; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-.alert-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
-.dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.dot-RED { background: #f85149; }
-.dot-YELLOW { background: #d29922; }
-.dot-GREEN { background: #3fb950; }
-.dashboard { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
-.chart-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px 16px; }
-.chart-card-title { font-size: 12px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-canvas { max-height: 160px; }
-.canvas-sm { max-height: 120px; }
-.stat-row { display: flex; gap: 8px; margin-bottom: 8px; }
-.stat-box { background: #0d1117; border-radius: 6px; padding: 6px 10px; flex: 1; text-align: center; }
-.stat-val { font-size: 13px; font-weight: 600; }
-.stat-lbl { font-size: 10px; color: #8b949e; margin-top: 1px; }
-.val-red { color: #f85149; }
-.val-green { color: #3fb950; }
-.val-blue { color: #58a6ff; }
-.val-yellow { color: #d29922; }
-@media (max-width: 700px) { .chart-grid { grid-template-columns: 1fr; } }
+.range-btn {
+  background: #f0f0f0;
+  border: 1px solid #bbb;
+  color: #555;
+  padding: 4px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.range-btn:hover:not(.active) { background: #e0e0e0; }
+.range-btn.active { background: #1565c0; border-color: #1565c0; color: #fff; }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 14px; }
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.chart-card {
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  padding: 12px 14px 10px;
+}
+.chart-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+  margin-bottom: 8px;
+  letter-spacing: 0.3px;
+}
+
+@media (max-width: 800px) {
+  .chart-grid { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
 
-<!-- Header -->
 <div class="header">
-  <div>
-    <div class="header-title">EagleEye — 外資追蹤儀表板</div>
-    <div class="header-subtitle">外資現貨 / 期貨 / 選擇權 / 融資券 vs 加權指數</div>
-  </div>
-  <div class="range-toggle">
-    <a th:href="@{/dashboard(days=20)}" class="range-btn" th:classappend="${vm.days == 20} ? ' active'">20天</a>
-    <a th:href="@{/dashboard(days=40)}" class="range-btn" th:classappend="${vm.days == 40} ? ' active'">40天</a>
-    <a th:href="@{/dashboard(days=60)}" class="range-btn" th:classappend="${vm.days == 60} ? ' active'">60天</a>
-  </div>
-</div>
-
-<!-- Alert Bar -->
-<div class="alert-bar">
-  <span class="alert-label">訊號</span>
-  <div class="alert-item" th:each="alert : ${vm.alerts}">
-    <div class="dot" th:classappend="'dot-' + ${alert.severity()}"></div>
-    <span th:text="${alert.signal() + ': ' + alert.message()}">alert</span>
+  <div class="header-inner">
+    <div>
+      <div class="header-title">EagleEye — 外資追蹤儀表板</div>
+      <div class="header-sub">外資現貨 / 期貨 / 選擇權 / 融資券 vs 加權指數</div>
+    </div>
+    <div class="range-toggle">
+      <a th:href="@{/dashboard(days=20)}" class="range-btn" th:classappend="${vm.days == 20} ? ' active'">20天</a>
+      <a th:href="@{/dashboard(days=40)}" class="range-btn" th:classappend="${vm.days == 40} ? ' active'">40天</a>
+      <a th:href="@{/dashboard(days=60)}" class="range-btn" th:classappend="${vm.days == 60} ? ' active'">60天</a>
+    </div>
   </div>
 </div>
 
-<div class="dashboard">
-
-  <!-- TAIEX — Full Width -->
-  <div class="chart-card">
-    <div class="chart-card-title">加權指數 TAIEX</div>
-    <canvas id="taiexChart"></canvas>
-  </div>
-
-  <!-- 2x2 Grid -->
+<div class="container">
   <div class="chart-grid">
 
-    <!-- 外資現貨 -->
     <div class="chart-card">
-      <div class="chart-card-title">外資現貨 淨買賣</div>
-      <div class="stat-row" th:if="${!vm.spotNetFlow.isEmpty()}">
-        <div class="stat-box">
-          <div class="stat-val"
-               th:classappend="${vm.spotCumulative.get(vm.spotCumulative.size()-1) >= 0} ? ' val-red' : ' val-green'"
-               th:text="${#numbers.formatDecimal(vm.spotCumulative.get(vm.spotCumulative.size()-1) / 1000000000.0, 1, 'COMMA', 1, 'POINT') + 'B'}">0B</div>
-          <div class="stat-lbl">累積淨買</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-val"
-               th:classappend="${vm.spotNetFlow.get(vm.spotNetFlow.size()-1) >= 0} ? ' val-red' : ' val-green'"
-               th:text="${#numbers.formatDecimal(vm.spotNetFlow.get(vm.spotNetFlow.size()-1) / 1000000000.0, 1, 'COMMA', 1, 'POINT') + 'B'}">0B</div>
-          <div class="stat-lbl">今日</div>
-        </div>
-      </div>
-      <canvas id="spotChart" class="canvas-sm"></canvas>
+      <div class="chart-title">外資買賣超</div>
+      <canvas id="spotChart"></canvas>
     </div>
 
-    <!-- 外資期貨 -->
     <div class="chart-card">
-      <div class="chart-card-title">外資期貨 多空比</div>
-      <div class="stat-row" th:if="${!vm.futuresLSRatio.isEmpty()}">
-        <div class="stat-box">
-          <div class="stat-val val-blue"
-               th:text="${#numbers.formatDecimal(vm.futuresLSRatio.get(vm.futuresLSRatio.size()-1), 1, 'COMMA', 2, 'POINT')}">0.00</div>
-          <div class="stat-lbl">今日多空比</div>
-        </div>
-      </div>
-      <canvas id="futuresChart" class="canvas-sm"></canvas>
+      <div class="chart-title">資券變化</div>
+      <canvas id="marginChart"></canvas>
     </div>
 
-    <!-- 外資選擇權 -->
     <div class="chart-card">
-      <div class="chart-card-title">外資選擇權 淨部位</div>
-      <div class="stat-row" th:if="${!vm.optionsNetOI.isEmpty()}">
-        <div class="stat-box">
-          <div class="stat-val"
-               th:classappend="${vm.optionsNetOI.get(vm.optionsNetOI.size()-1) >= 0} ? ' val-green' : ' val-red'"
-               th:text="${vm.optionsNetOI.get(vm.optionsNetOI.size()-1)}">0</div>
-          <div class="stat-lbl">今日淨OI（口）</div>
-        </div>
-      </div>
-      <canvas id="optionsChart" class="canvas-sm"></canvas>
+      <div class="chart-title">外資期貨部位</div>
+      <canvas id="futuresChart"></canvas>
     </div>
 
-    <!-- 融資券 -->
     <div class="chart-card">
-      <div class="chart-card-title">融資券 增減率</div>
-      <div class="stat-row" th:if="${!vm.marginChangeRate.isEmpty()}">
-        <div class="stat-box">
-          <div class="stat-val"
-               th:classappend="${vm.marginChangeRate.get(vm.marginChangeRate.size()-1) >= 0} ? ' val-yellow' : ' val-green'"
-               th:text="${#numbers.formatDecimal(vm.marginChangeRate.get(vm.marginChangeRate.size()-1) * 100, 1, 'COMMA', 2, 'POINT') + '%'}">0.00%</div>
-          <div class="stat-lbl">今日融資增減</div>
-        </div>
-      </div>
-      <canvas id="marginChart" class="canvas-sm"></canvas>
+      <div class="chart-title">外資選擇權</div>
+      <canvas id="optionsChart"></canvas>
     </div>
 
   </div>
-</div>
+</div><!-- .container -->
 
 <script th:inline="javascript">
 /*<![CDATA[*/
-const labels       = /*[[${vm.dateLabels}]]*/ [];
-const taiexData    = /*[[${vm.taiexClose}]]*/ [];
-const spotNet      = /*[[${vm.spotNetFlow}]]*/ [];
-const futRatio     = /*[[${vm.futuresLSRatio}]]*/ [];
-const optNetOI     = /*[[${vm.optionsNetOI}]]*/ [];
-const marginRate   = /*[[${vm.marginChangeRate}]]*/ [];
+const labels        = /*[[${vm.dateLabels}]]*/ [];
+const taiexData     = /*[[${vm.taiexClose}]]*/ [];
+const spotNet       = /*[[${vm.spotNetFlow}]]*/ [];
+const marginChg     = /*[[${vm.marginChange}]]*/ [];
+const shortChg      = /*[[${vm.shortChange}]]*/ [];
+const futLong       = /*[[${vm.futuresLongOI}]]*/ [];
+const futShort      = /*[[${vm.futuresShortOI}]]*/ [];
+const optCall       = /*[[${vm.optionsCallOI}]]*/ [];
+const optPut        = /*[[${vm.optionsPutOI}]]*/ [];
 
-const TAIEX_COLOR  = '#58a6ff';
-const GRID_COLOR   = 'rgba(48,54,61,0.8)';
+const TAIEX_COLOR = '#1565c0';
+const RED         = 'rgba(198,40,40,0.85)';
+const GREEN       = 'rgba(46,125,50,0.85)';
+const GRID        = '#e8e8e8';
 
-const baseScales = {
-  x: { ticks: { color: '#8b949e', font: { size: 9 }, maxTicksLimit: 10 }, grid: { color: GRID_COLOR } },
-  y: { position: 'left',  ticks: { color: '#8b949e', font: { size: 9 } }, grid: { color: GRID_COLOR } },
-  y2:{ position: 'right', ticks: { color: TAIEX_COLOR, font: { size: 9 } }, grid: { drawOnChartArea: false } }
+function taiexDs() {
+  return {
+    type: 'line', label: '加權指數',
+    data: taiexData,
+    borderColor: TAIEX_COLOR, borderWidth: 1.5,
+    pointRadius: 0, tension: 0.2,
+    yAxisID: 'y2', fill: false, order: 0
+  };
+}
+
+function opts(yFmt) {
+  return {
+    responsive: true,
+    maintainAspectRatio: true,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        display: true, position: 'bottom',
+        labels: { boxWidth: 12, font: { size: 10 }, color: '#444', padding: 10 }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#666', font: { size: 9 }, maxRotation: 45, maxTicksLimit: 12 },
+        grid: { color: GRID }
+      },
+      y: {
+        position: 'left',
+        ticks: { color: '#555', font: { size: 9 }, callback: yFmt },
+        grid: { color: GRID }
+      },
+      y2: {
+        position: 'right',
+        ticks: {
+          color: TAIEX_COLOR, font: { size: 9 },
+          callback: v => v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v
+        },
+        grid: { drawOnChartArea: false }
+      }
+    }
+  };
+}
+
+const fmtBillion = v => {
+  const b = v / 1e9;
+  return (b >= 0 ? '+' : '') + b.toFixed(1);
 };
-const baseOpts = {
-  responsive: true, maintainAspectRatio: true,
-  interaction: { mode: 'index', intersect: false },
-  plugins: { legend: { display: false } },
-  scales: baseScales
-};
-const taiexOverlay = {
-  type: 'line', data: taiexData,
-  borderColor: TAIEX_COLOR, borderWidth: 1.5, pointRadius: 0,
-  yAxisID: 'y2', tension: 0.3
+
+const fmtThousand = v => {
+  if (Math.abs(v) >= 10000) return (v / 10000).toFixed(1) + 'W';
+  if (Math.abs(v) >= 1000)  return (v / 1000).toFixed(1) + 'K';
+  return String(v);
 };
 
-// TAIEX main chart
-new Chart(document.getElementById('taiexChart'), {
-  type: 'line',
-  data: { labels, datasets: [{ data: taiexData, borderColor: TAIEX_COLOR, borderWidth: 2, pointRadius: 0, fill: false, tension: 0.3 }] },
-  options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } },
-    scales: { x: baseScales.x, y: { ticks: { color: '#8b949e', font: { size: 9 } }, grid: { color: GRID_COLOR } } } }
-});
-
-// 外資現貨 — bar (net) + TAIEX overlay
+// Chart 1: 外資買賣超 — single bar, red=buy / green=sell
 new Chart(document.getElementById('spotChart'), {
-  data: { labels, datasets: [
-    { type: 'bar', data: spotNet.map(v => v / 1e9),
-      backgroundColor: spotNet.map(v => v >= 0 ? 'rgba(248,81,73,0.7)' : 'rgba(63,185,80,0.7)'), yAxisID: 'y' },
-    { ...taiexOverlay }
-  ]},
-  options: baseOpts
+  data: {
+    labels,
+    datasets: [
+      {
+        type: 'bar', label: '外資(十億)',
+        data: spotNet.map(v => v / 1e9),
+        backgroundColor: spotNet.map(v => v >= 0 ? RED : GREEN),
+        yAxisID: 'y', order: 1
+      },
+      taiexDs()
+    ]
+  },
+  options: opts(fmtBillion)
 });
 
-// 外資期貨 — area line + TAIEX overlay
-new Chart(document.getElementById('futuresChart'), {
-  type: 'line',
-  data: { labels, datasets: [
-    { data: futRatio, borderColor: '#d29922', borderWidth: 2, pointRadius: 0,
-      fill: { target: 'origin', above: 'rgba(210,153,34,0.15)', below: 'rgba(248,81,73,0.15)' },
-      yAxisID: 'y', tension: 0.3 },
-    { ...taiexOverlay }
-  ]},
-  options: baseOpts
-});
-
-// 外資選擇權 — line + TAIEX overlay
-new Chart(document.getElementById('optionsChart'), {
-  type: 'line',
-  data: { labels, datasets: [
-    { data: optNetOI, borderColor: '#3fb950', borderWidth: 2, pointRadius: 0,
-      fill: false, yAxisID: 'y', tension: 0.3 },
-    { ...taiexOverlay }
-  ]},
-  options: baseOpts
-});
-
-// 融資券 — bar + TAIEX overlay
+// Chart 2: 資券變化 — margin delta (red) + short delta (green)
 new Chart(document.getElementById('marginChart'), {
-  data: { labels, datasets: [
-    { type: 'bar', data: marginRate.map(v => v * 100),
-      backgroundColor: marginRate.map(v => v >= 0 ? 'rgba(210,153,34,0.7)' : 'rgba(63,185,80,0.5)'), yAxisID: 'y' },
-    { ...taiexOverlay }
-  ]},
-  options: baseOpts
+  data: {
+    labels,
+    datasets: [
+      { type: 'bar', label: '融資變化', data: marginChg, backgroundColor: RED,   yAxisID: 'y', order: 1 },
+      { type: 'bar', label: '融券變化', data: shortChg,  backgroundColor: GREEN, yAxisID: 'y', order: 1 },
+      taiexDs()
+    ]
+  },
+  options: opts(fmtThousand)
+});
+
+// Chart 3: 外資期貨部位 — long OI (red, positive) + short OI (green, negative)
+new Chart(document.getElementById('futuresChart'), {
+  data: {
+    labels,
+    datasets: [
+      { type: 'bar', label: '外資多單', data: futLong,           backgroundColor: RED,   yAxisID: 'y', order: 1 },
+      { type: 'bar', label: '外資空單', data: futShort.map(v => -v), backgroundColor: GREEN, yAxisID: 'y', order: 1 },
+      taiexDs()
+    ]
+  },
+  options: opts(fmtThousand)
+});
+
+// Chart 4: 外資選擇權 — call OI (red, positive) + put OI (green, negative)
+new Chart(document.getElementById('optionsChart'), {
+  data: {
+    labels,
+    datasets: [
+      { type: 'bar', label: '外資買權', data: optCall,           backgroundColor: RED,   yAxisID: 'y', order: 1 },
+      { type: 'bar', label: '外資賣權', data: optPut.map(v => -v), backgroundColor: GREEN, yAxisID: 'y', order: 1 },
+      taiexDs()
+    ]
+  },
+  options: opts(fmtThousand)
 });
 /*]]>*/
 </script>
