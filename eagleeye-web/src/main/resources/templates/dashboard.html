@@ -167,9 +167,9 @@ function opts(yFmt) {
   };
 }
 
-const fmtBillion = v => {
-  const b = v / 1e9;
-  return (b >= 0 ? '+' : '') + b.toFixed(1);
+const fmtYi = v => {
+  const yi = v / 1e8;
+  return (yi >= 0 ? '+' : '') + yi.toFixed(1);
 };
 
 const fmtThousand = v => {
@@ -184,15 +184,15 @@ new Chart(document.getElementById('spotChart'), {
     labels,
     datasets: [
       {
-        type: 'bar', label: '外資(十億)',
-        data: spotNet.map(v => v / 1e9),
+        type: 'bar', label: '外資(億)',
+        data: spotNet.map(v => v / 1e8),
         backgroundColor: spotNet.map(v => v >= 0 ? RED : GREEN),
         yAxisID: 'y', order: 1
       },
       taiexDs()
     ]
   },
-  options: opts(fmtBillion)
+  options: opts(fmtYi)
 });
 
 // Chart 2: 資券變化 — margin delta (red) + short delta (green)
@@ -213,8 +213,8 @@ new Chart(document.getElementById('futuresChart'), {
   data: {
     labels,
     datasets: [
-      { type: 'bar', label: '外資多單', data: futLong,           backgroundColor: RED,   yAxisID: 'y', order: 1 },
-      { type: 'bar', label: '外資空單', data: futShort.map(v => -v), backgroundColor: GREEN, yAxisID: 'y', order: 1 },
+      { type: 'bar', label: '外資多單', data: futLong,  backgroundColor: RED,   yAxisID: 'y', order: 1 },
+      { type: 'bar', label: '外資空單', data: futShort, backgroundColor: GREEN, yAxisID: 'y', order: 1 },
       taiexDs()
     ]
   },
@@ -226,8 +226,8 @@ new Chart(document.getElementById('optionsChart'), {
   data: {
     labels,
     datasets: [
-      { type: 'bar', label: '外資買權', data: optCall,           backgroundColor: RED,   yAxisID: 'y', order: 1 },
-      { type: 'bar', label: '外資賣權', data: optPut.map(v => -v), backgroundColor: GREEN, yAxisID: 'y', order: 1 },
+      { type: 'bar', label: '外資買權', data: optCall, backgroundColor: RED,   yAxisID: 'y', order: 1 },
+      { type: 'bar', label: '外資賣權', data: optPut,  backgroundColor: GREEN, yAxisID: 'y', order: 1 },
       taiexDs()
     ]
   },
