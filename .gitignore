@@ -37,3 +37,4 @@ mvnw
 mvnw.cmd
 .mvn
 .superpowers/
+.clauge-worktrees/

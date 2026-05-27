@@ -23,9 +23,16 @@ import java.time.YearMonth;
 import java.time.ZoneId;
 
 /**
- * Daily one-shot runner — collects all data for today and exits.
+ * Daily one-shot runner — collects one data source per invocation and exits.
  * Activated when no backfill properties are set (i.e. normal daily run).
- * launchd starts this process at 18:30 Taipei time via StartCalendarInterval.
+ *
+ * launchd fires this process four times per weekday (Taipei time):
+ *   13:40  → market index        (TWSE close data available ~13:30)
+ *   14:10  → institutional flow  (TWSE 三大法人 published ~14:00)
+ *   15:10  → TAIFEX OI           (未平倉口數及契約金額 published ~15:00)
+ *   21:35  → margin transactions (TWSE 融資融券 published 20:30–21:30)
+ *
+ * The runner selects which collector to run by checking the current Taipei time.
  */
 @Component
 @ConditionalOnExpression(
@@ -37,7 +44,10 @@ public class DailyCollectionRunner implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DailyCollectionRunner.class);
     private static final ZoneId TAIPEI = ZoneId.of("Asia/Taipei");
-    private static final long REQUEST_DELAY_MS = 500;
+    // Time-window boundaries (Taipei)
+    private static final java.time.LocalTime IFLOW_START  = java.time.LocalTime.of(14,  0);
+    private static final java.time.LocalTime OI_START     = java.time.LocalTime.of(15,  0);
+    private static final java.time.LocalTime MARGIN_START = java.time.LocalTime.of(21, 30);
 
     private final CollectionService collectionService;
     private final MarginTransactionService marginTransactionService;
@@ -58,7 +68,7 @@ public class DailyCollectionRunner implements ApplicationRunner {
     }
 
     @Override
-    public void run(ApplicationArguments args) throws Exception {
+    public void run(ApplicationArguments args) {
         LocalDate today = LocalDate.now(TAIPEI);
 
         if (today.getDayOfWeek() == DayOfWeek.SATURDAY || today.getDayOfWeek() == DayOfWeek.SUNDAY) {
@@ -67,26 +77,47 @@ public class DailyCollectionRunner implements ApplicationRunner {
             return;
         }
 
-        log.info("=== Daily collection: {} ===", today);
-        System.out.printf("Daily collection: %s%n%n", today);
-
-        MarketIndexCollectionResult mi = marketIndexService.collectMonth(YearMonth.from(today));
-        print(mi);
-        Thread.sleep(REQUEST_DELAY_MS);
-
-        CollectionResult taifex = collectionService.collectAll(today);
-        print(today, taifex);
-        Thread.sleep(REQUEST_DELAY_MS);
-
-        MarginCollectionResult margin = marginTransactionService.collectDate(today);
-        System.out.printf("  [MARGIN]  %-12s  %s%n", today, statusLabel(margin.status()));
-        Thread.sleep(REQUEST_DELAY_MS);
-
-        InstitutionalFlowResult flow = institutionalFlowService.collectDate(today);
-        System.out.printf("  [IFLOW]   %-12s  %s%n", today, statusLabel(flow.status()));
+        java.time.LocalTime now = java.time.LocalTime.now(TAIPEI);
+        if (now.isBefore(IFLOW_START)) {
+            collectMarketIndex(today);
+        } else if (now.isBefore(OI_START)) {
+            collectInstitutionalFlow(today);
+        } else if (now.isBefore(MARGIN_START)) {
+            collectTaifexOi(today);
+        } else {
+            collectMargin(today);
+        }
 
         System.out.println();
         System.exit(SpringApplication.exit(applicationContext, () -> 0));
+    }
+
+    // 13:40: market index — TWSE close data available after 13:30
+    private void collectMarketIndex(LocalDate today) {
+        log.info("=== Collecting market index: {} ===", today);
+        MarketIndexCollectionResult mi = marketIndexService.collectMonth(YearMonth.from(today));
+        print(mi);
+    }
+
+    // 14:10: institutional flow — 三大法人 published ~14:00
+    private void collectInstitutionalFlow(LocalDate today) {
+        log.info("=== Collecting institutional flow: {} ===", today);
+        InstitutionalFlowResult flow = institutionalFlowService.collectDate(today);
+        System.out.printf("  [IFLOW]   %-12s  %s%n", today, statusLabel(flow.status()));
+    }
+
+    // 21:35: margin transactions — 融資融券 published 20:30–21:30
+    private void collectMargin(LocalDate today) {
+        log.info("=== Collecting margin transactions: {} ===", today);
+        MarginCollectionResult margin = marginTransactionService.collectDate(today);
+        System.out.printf("  [MARGIN]  %-12s  %s%n", today, statusLabel(margin.status()));
+    }
+
+    // 15:10: TAIFEX OI — 未平倉口數及契約金額 published ~15:00
+    private void collectTaifexOi(LocalDate today) {
+        log.info("=== Collecting TAIFEX OI: {} ===", today);
+        CollectionResult taifex = collectionService.collectAll(today);
+        print(today, taifex);
     }
 
     private void print(MarketIndexCollectionResult r) {
