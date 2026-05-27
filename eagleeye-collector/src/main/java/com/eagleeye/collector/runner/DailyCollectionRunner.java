@@ -27,8 +27,8 @@ import java.time.ZoneId;
  * Activated when no backfill properties are set (i.e. normal daily run).
  *
  * launchd fires this process four times per weekday (Taipei time):
- *   14:10  → market index        (TWSE FMTQIK afterTrading stats published ~14:00)
- *   15:10  → institutional flow  (TWSE 三大法人 published ~15:00)
+ *   15:05  → market index        (TWSE FMTQIK afterTrading stats published ~15:00)
+ *   15:15  → institutional flow  (TWSE 三大法人 published ~15:00)
  *   15:30  → TAIFEX OI           (未平倉口數及契約金額 published ~15:00)
  *   21:35  → margin transactions (TWSE 融資融券 published 20:30–21:30)
  *
@@ -45,8 +45,8 @@ public class DailyCollectionRunner implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(DailyCollectionRunner.class);
     private static final ZoneId TAIPEI = ZoneId.of("Asia/Taipei");
     // Time-window boundaries (Taipei)
-    private static final java.time.LocalTime INDEX_START  = java.time.LocalTime.of(14,  0);
-    private static final java.time.LocalTime IFLOW_START  = java.time.LocalTime.of(15,  0);
+    private static final java.time.LocalTime INDEX_START  = java.time.LocalTime.of(15,  0);
+    private static final java.time.LocalTime IFLOW_START  = java.time.LocalTime.of(15, 10);
     private static final java.time.LocalTime OI_START     = java.time.LocalTime.of(15, 20);
     private static final java.time.LocalTime MARGIN_START = java.time.LocalTime.of(21, 30);
 
@@ -95,7 +95,7 @@ public class DailyCollectionRunner implements ApplicationRunner {
         System.exit(SpringApplication.exit(applicationContext, () -> 0));
     }
 
-    // 14:10: market index — FMTQIK afterTrading stats published ~14:00
+    // 15:05: market index — FMTQIK afterTrading stats published ~15:00
     private void collectMarketIndex(LocalDate today) {
         log.info("=== Collecting market index: {} ===", today);
         MarketIndexCollectionResult mi = marketIndexService.collectMonth(YearMonth.from(today));
