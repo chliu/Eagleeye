@@ -14,6 +14,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
@@ -35,6 +36,7 @@ import java.time.ZoneId;
  * The runner selects which collector to run by checking the current Taipei time.
  */
 @Component
+@ConditionalOnProperty(name = "eagleeye.collector.enabled", havingValue = "true")
 @ConditionalOnExpression(
     "!environment.containsProperty('backfill.from') && " +
     "!environment.containsProperty('combined.backfill.from') && " +
