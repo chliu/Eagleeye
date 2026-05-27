@@ -118,6 +118,30 @@ class TaifexParserTest {
     }
 
     // -----------------------------------------------------------------------
+    // isNoDataPage
+    // -----------------------------------------------------------------------
+
+    @Test
+    void isNoDataPage_true_whenEnglishMarker() {
+        assertThat(parser.isNoDataPage("<html><body>No Data</body></html>")).isTrue();
+    }
+
+    @Test
+    void isNoDataPage_true_whenChineseMarker() {
+        assertThat(parser.isNoDataPage("<html><body>查無資料</body></html>")).isTrue();
+    }
+
+    @Test
+    void isNoDataPage_false_forNormalHtml() {
+        assertThat(parser.isNoDataPage("<html><body><table class='table_f'></table></body></html>")).isFalse();
+    }
+
+    @Test
+    void isNoDataPage_false_forNull() {
+        assertThat(parser.isNoDataPage(null)).isFalse();
+    }
+
+    // -----------------------------------------------------------------------
     // HTML builders
     // -----------------------------------------------------------------------
 
