@@ -20,8 +20,8 @@
     <!--
         Four independent collections Mon–Fri (Taipei time = UTC+8):
           13:40 (05:40 UTC): market index        — TWSE close data available ~13:30
-          14:10 (06:10 UTC): institutional flow  — TWSE 三大法人 published ~14:00
-          15:10 (07:10 UTC): TAIFEX OI           — 未平倉口數及契約金額 published ~15:00
+          15:10 (07:10 UTC): institutional flow  — TWSE 三大法人 published ~15:00
+          15:30 (07:30 UTC): TAIFEX OI           — 未平倉口數及契約金額 published ~15:00
           21:35 (13:35 UTC): margin transactions — TWSE 融資融券 published 20:30–21:30
     -->
     <key>StartCalendarInterval</key>
@@ -32,18 +32,18 @@
         <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>5</integer><key>Minute</key><integer>40</integer></dict>
         <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>5</integer><key>Minute</key><integer>40</integer></dict>
         <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>5</integer><key>Minute</key><integer>40</integer></dict>
-        <!-- 14:10 Taipei (06:10 UTC): institutional flow -->
-        <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>10</integer></dict>
-        <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>10</integer></dict>
-        <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>10</integer></dict>
-        <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>10</integer></dict>
-        <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>10</integer></dict>
-        <!-- 15:10 Taipei (07:10 UTC): TAIFEX OI -->
+        <!-- 15:10 Taipei (07:10 UTC): institutional flow -->
         <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>10</integer></dict>
         <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>10</integer></dict>
         <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>10</integer></dict>
         <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>10</integer></dict>
         <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>10</integer></dict>
+        <!-- 15:30 Taipei (07:30 UTC): TAIFEX OI -->
+        <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>30</integer></dict>
+        <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>30</integer></dict>
+        <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>30</integer></dict>
+        <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>30</integer></dict>
+        <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>30</integer></dict>
         <!-- 21:35 Taipei (13:35 UTC): margin transactions -->
         <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>13</integer><key>Minute</key><integer>35</integer></dict>
         <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>13</integer><key>Minute</key><integer>35</integer></dict>
