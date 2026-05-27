@@ -64,16 +64,21 @@ public class DailyCollectionRunner implements ApplicationRunner {
 
         LocalTime now = LocalTime.now(TAIPEI);
 
-        collectors.stream()
-                .sorted(Comparator.comparing(ScheduledCollector::scheduledAt))
-                .filter(c -> !now.isBefore(c.scheduledAt()))
-                .reduce((a, b) -> b)
+        selectCollector(collectors, now)
                 .ifPresentOrElse(
                         c -> dispatch(c, today),
                         () -> log.warn("No collector scheduled before {}", now));
 
         System.out.println();
         System.exit(SpringApplication.exit(applicationContext, () -> 0));
+    }
+
+    // Package-private for testing
+    static java.util.Optional<ScheduledCollector> selectCollector(List<ScheduledCollector> collectors, LocalTime now) {
+        return collectors.stream()
+                .sorted(Comparator.comparing(ScheduledCollector::scheduledAt))
+                .filter(c -> !now.isBefore(c.scheduledAt()))
+                .reduce((a, b) -> b);
     }
 
     private void dispatch(ScheduledCollector collector, LocalDate date) {
