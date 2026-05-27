@@ -295,9 +295,6 @@ new Chart(document.getElementById('marginChart'), {
   options: opts(fmtThousand)
 });
 
-function delta(arr) {
-  return arr.map((v, i) => i === 0 ? 0 : v - arr[i - 1]);
-}
 const RED_POS = RED, RED_NEG = RED_DIM, GREEN_POS = GREEN, GREEN_NEG = GRN_DIM;
 
 // Chart 3: 外資期貨部位
@@ -334,27 +331,39 @@ function isSettlement(iso) {
 }
 
 // Table 5: 外資期貨日增減
+function delta(arr) {
+  return arr.map((v, i) => {
+    if (i === 0 || v == null || arr[i - 1] == null) return null;
+    return v - arr[i - 1];
+  });
+}
 const futLongDelta  = delta(futLong);
 const futShortDelta = delta(futShort);
 
-function fmtDelta(v, i) {
-  if (i === 0) return '<span class="neu">—</span>';
+const NEU = '<span class="neu">—</span>';
+function fmtDelta(v) {
+  if (v == null) return NEU;
   const cls = v > 0 ? 'up' : v < 0 ? 'down' : 'neu';
   return `<span class="${cls}">${v > 0 ? '+' : ''}${v.toLocaleString()}</span>`;
 }
 function fmtNet(v) {
+  if (v == null) return NEU;
   const cls = v > 0 ? 'up' : v < 0 ? 'down' : 'neu';
   return `<span class="${cls}">${v > 0 ? '+' : ''}${v.toLocaleString()}</span>`;
+}
+function fmtVol(v) {
+  return v != null ? v.toLocaleString() : '—';
 }
 
 (function buildTable() {
   const rows = labels.map((lbl, i) => {
     const settle = isSettlement(isoDates[i]);
+    const l = futLong[i], s = futShort[i];
     return {
       lbl: settle ? `<span class="settle">${lbl} *</span>` : lbl,
-      long: futLong[i], longD: futLongDelta[i],
-      short: futShort[i], shortD: futShortDelta[i],
-      net: futLong[i] - futShort[i], i
+      long: l, longD: futLongDelta[i],
+      short: s, shortD: futShortDelta[i],
+      net: (l != null && s != null) ? l - s : null
     };
   }).reverse();
 
@@ -367,10 +376,10 @@ function fmtNet(v) {
     </tr></thead>
     <tbody>${rows.map(r => `<tr>
       <td>${r.lbl}</td>
-      <td>${r.long.toLocaleString()}</td>
-      <td>${fmtDelta(r.longD, r.i)}</td>
-      <td>${r.short.toLocaleString()}</td>
-      <td>${fmtDelta(r.shortD, r.i)}</td>
+      <td>${fmtVol(r.long)}</td>
+      <td>${fmtDelta(r.longD)}</td>
+      <td>${fmtVol(r.short)}</td>
+      <td>${fmtDelta(r.shortD)}</td>
       <td>${fmtNet(r.net)}</td>
     </tr>`).join('')}</tbody>
   </table>`;
