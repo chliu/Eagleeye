@@ -52,14 +52,15 @@ public class DashboardService {
         Map<LocalDate, OptionsPosition>   optMap   = indexByDate(optionsList, OptionsPosition::getTradeDate);
         Map<LocalDate, MarginTransaction> mgnMap   = indexByDate(marginList,  MarginTransaction::getTradeDate);
 
-        List<LocalDate> alignedDates = taiexList.stream()
+        // Use taiex dates as the x-axis base (represents trading days).
+        // Other sources may arrive at different times — missing dates get null
+        // so Chart.js renders a gap instead of 0.
+        List<LocalDate> allTradingDates = taiexList.stream()
             .map(TaiexIndex::getTradeDate)
-            .filter(d -> flowMap.containsKey(d) && futMap.containsKey(d)
-                      && optMap.containsKey(d) && mgnMap.containsKey(d))
             .toList();
 
-        int start = Math.max(0, alignedDates.size() - days);
-        List<LocalDate> dates = alignedDates.subList(start, alignedDates.size());
+        int start = Math.max(0, allTradingDates.size() - days);
+        List<LocalDate> dates = allTradingDates.subList(start, allTradingDates.size());
 
         List<String> isoDates       = new ArrayList<>();
         List<String> dateLabels     = new ArrayList<>();
@@ -81,23 +82,27 @@ public class DashboardService {
 
             isoDates.add(date.toString());
             dateLabels.add(date.format(LABEL_FMT));
-            taiexClose.add(ti.getClose() / 100.0);
+            taiexClose.add(ti.getClose() / 100.0);  // ti always non-null (it's the x-axis base)
 
-            spotNetFlow.add(fl.getForeignNet() != null ? fl.getForeignNet() : 0L);
+            spotNetFlow.add(fl != null ? fl.getForeignNet() : null);
 
-            long mBalance = mg.getMarginBalance()     != null ? mg.getMarginBalance()     : 0L;
-            long mPrev    = mg.getMarginPrevBalance() != null ? mg.getMarginPrevBalance() : 0L;
-            marginChange.add(mBalance - mPrev);
+            if (mg != null) {
+                long mBalance = mg.getMarginBalance()     != null ? mg.getMarginBalance()     : 0L;
+                long mPrev    = mg.getMarginPrevBalance() != null ? mg.getMarginPrevBalance() : 0L;
+                marginChange.add(mBalance - mPrev);
+                long sBalance = mg.getShortBalance()     != null ? mg.getShortBalance()     : 0L;
+                long sPrev    = mg.getShortPrevBalance() != null ? mg.getShortPrevBalance() : 0L;
+                shortChange.add(sBalance - sPrev);
+            } else {
+                marginChange.add(null);
+                shortChange.add(null);
+            }
 
-            long sBalance = mg.getShortBalance()     != null ? mg.getShortBalance()     : 0L;
-            long sPrev    = mg.getShortPrevBalance() != null ? mg.getShortPrevBalance() : 0L;
-            shortChange.add(sBalance - sPrev);
+            futuresLongOI.add(fp != null ? fp.getOiLongVolume()  : null);
+            futuresShortOI.add(fp != null ? fp.getOiShortVolume() : null);
 
-            futuresLongOI.add(fp.getOiLongVolume()  != null ? fp.getOiLongVolume()  : 0L);
-            futuresShortOI.add(fp.getOiShortVolume() != null ? fp.getOiShortVolume() : 0L);
-
-            optionsCallOI.add(op.getOiLongVolume()  != null ? op.getOiLongVolume()  : 0L);
-            optionsPutOI.add(op.getOiShortVolume()  != null ? op.getOiShortVolume() : 0L);
+            optionsCallOI.add(op != null ? op.getOiLongVolume()  : null);
+            optionsPutOI.add(op != null ? op.getOiShortVolume()  : null);
         }
 
         return new DashboardViewModel(

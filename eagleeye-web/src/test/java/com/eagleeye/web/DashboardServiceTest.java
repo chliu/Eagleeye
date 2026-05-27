@@ -139,11 +139,11 @@ class DashboardServiceTest {
     }
 
     @Test
-    void buildViewModel_excludesDatesWithMissingData() {
+    void buildViewModel_includesDatesWithPartialData_nullForMissingSources() {
         LocalDate d1 = LocalDate.of(2025, 3, 3);
         LocalDate d2 = LocalDate.of(2025, 3, 4);
 
-        // taiex has d1 and d2, but flow only has d1
+        // taiex has d1 and d2; flow only has d1 — d2 should still appear with null spotNetFlow
         when(taiexRepo.findByTradeDateBetweenOrderByTradeDateAsc(any(), any()))
             .thenReturn(List.of(taiex(d1, 2100000L), taiex(d2, 2110000L)));
         when(flowRepo.findByTradeDateBetweenOrderByTradeDateAsc(any(), any()))
@@ -160,7 +160,10 @@ class DashboardServiceTest {
 
         DashboardViewModel vm = service.buildViewModel(20);
 
-        assertThat(vm.dateLabels()).containsExactly("3/3");
+        // Both dates visible — TaiexIndex is the x-axis base
+        assertThat(vm.dateLabels()).containsExactly("3/3", "3/4");
+        // d1 has flow data; d2 is missing flow → null
+        assertThat(vm.spotNetFlow()).containsExactly(1_000_000_000L, null);
     }
 
     // ── Stub helpers ──────────────────────────────────────────────────────────
