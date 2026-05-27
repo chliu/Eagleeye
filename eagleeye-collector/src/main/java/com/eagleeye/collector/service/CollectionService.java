@@ -95,31 +95,37 @@ public class CollectionService {
     @Transactional
     protected int processFutures(String html, LocalDate date) {
         List<PositionDto> dtos = taifexParser.parse(html, date);
-        dtos.forEach(dto -> upsertFutures(dto, date));
+        int[] counts = {0, 0}; // [inserted, updated]
+        dtos.forEach(dto -> { if (upsertFutures(dto, date)) counts[0]++; else counts[1]++; });
+        log.info("Futures positions for {}: {} inserted, {} updated", date, counts[0], counts[1]);
         return dtos.size();
     }
 
     @Transactional
     protected int processOptions(String html, LocalDate date) {
         List<PositionDto> dtos = taifexParser.parse(html, date);
-        dtos.forEach(dto -> upsertOptions(dto, date));
+        int[] counts = {0, 0}; // [inserted, updated]
+        dtos.forEach(dto -> { if (upsertOptions(dto, date)) counts[0]++; else counts[1]++; });
+        log.info("Options positions for {}: {} inserted, {} updated", date, counts[0], counts[1]);
         return dtos.size();
     }
 
-    private void upsertFutures(PositionDto dto, LocalDate date) {
-        FuturesPosition pos = futuresRepo
-                .findByTradeDateAndContractAndTraderType(date, dto.contract(), dto.traderType())
-                .orElseGet(() -> new FuturesPosition(date, dto.contract(), dto.traderType()));
+    // Returns true if inserted, false if updated
+    private boolean upsertFutures(PositionDto dto, LocalDate date) {
+        var existing = futuresRepo.findByTradeDateAndContractAndTraderType(date, dto.contract(), dto.traderType());
+        FuturesPosition pos = existing.orElseGet(() -> new FuturesPosition(date, dto.contract(), dto.traderType()));
         applyToFutures(pos, dto);
         futuresRepo.save(pos);
+        return existing.isEmpty();
     }
 
-    private void upsertOptions(PositionDto dto, LocalDate date) {
-        OptionsPosition pos = optionsRepo
-                .findByTradeDateAndContractAndTraderType(date, dto.contract(), dto.traderType())
-                .orElseGet(() -> new OptionsPosition(date, dto.contract(), dto.traderType()));
+    // Returns true if inserted, false if updated
+    private boolean upsertOptions(PositionDto dto, LocalDate date) {
+        var existing = optionsRepo.findByTradeDateAndContractAndTraderType(date, dto.contract(), dto.traderType());
+        OptionsPosition pos = existing.orElseGet(() -> new OptionsPosition(date, dto.contract(), dto.traderType()));
         applyToOptions(pos, dto);
         optionsRepo.save(pos);
+        return existing.isEmpty();
     }
 
     private void applyToFutures(FuturesPosition pos, PositionDto dto) {

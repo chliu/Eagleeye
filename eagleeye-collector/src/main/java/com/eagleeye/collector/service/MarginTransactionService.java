@@ -49,9 +49,8 @@ public class MarginTransactionService {
     }
 
     private void upsert(MarginTransaction parsed) {
-        MarginTransaction existing = repository
-                .findByTradeDate(parsed.getTradeDate())
-                .orElseGet(() -> new MarginTransaction(parsed.getTradeDate()));
+        var found = repository.findByTradeDate(parsed.getTradeDate());
+        MarginTransaction existing = found.orElseGet(() -> new MarginTransaction(parsed.getTradeDate()));
 
         existing.setMarginPurchase(parsed.getMarginPurchase());
         existing.setMarginSale(parsed.getMarginSale());
@@ -65,5 +64,6 @@ public class MarginTransactionService {
         existing.setShortBalance(parsed.getShortBalance());
 
         repository.save(existing);
+        log.info("{} margin transaction for {}", found.isPresent() ? "Updated" : "Inserted", parsed.getTradeDate());
     }
 }

@@ -52,8 +52,9 @@ public class MarketIndexService {
                 }
             });
 
-            bars.forEach(this::upsert);
-            log.info("Collected {} TAIEX bars for {}", bars.size(), yearMonth);
+            int[] counts = {0, 0}; // [inserted, updated]
+            bars.forEach(bar -> { if (upsert(bar)) counts[0]++; else counts[1]++; });
+            log.info("TAIEX bars for {}: {} inserted, {} updated", yearMonth, counts[0], counts[1]);
             return MarketIndexCollectionResult.collected(yearMonth, bars.size());
 
         } catch (Exception e) {
@@ -66,10 +67,10 @@ public class MarketIndexService {
         return collectMonth(YearMonth.from(date));
     }
 
-    private void upsert(TaiexIndex parsed) {
-        TaiexIndex bar = repository
-                .findByTradeDate(parsed.getTradeDate())
-                .orElseGet(() -> new TaiexIndex(parsed.getTradeDate()));
+    // Returns true if inserted, false if updated
+    private boolean upsert(TaiexIndex parsed) {
+        var existing = repository.findByTradeDate(parsed.getTradeDate());
+        TaiexIndex bar = existing.orElseGet(() -> new TaiexIndex(parsed.getTradeDate()));
 
         bar.setOpen(parsed.getOpen());
         bar.setHigh(parsed.getHigh());
@@ -79,5 +80,6 @@ public class MarketIndexService {
         bar.setTurnover(parsed.getTurnover());
 
         repository.save(bar);
+        return existing.isEmpty();
     }
 }

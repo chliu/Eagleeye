@@ -49,9 +49,8 @@ public class InstitutionalFlowService {
     }
 
     private void upsert(InstitutionalFlow parsed) {
-        InstitutionalFlow flow = repository
-                .findByTradeDate(parsed.getTradeDate())
-                .orElseGet(() -> new InstitutionalFlow(parsed.getTradeDate()));
+        var existing = repository.findByTradeDate(parsed.getTradeDate());
+        InstitutionalFlow flow = existing.orElseGet(() -> new InstitutionalFlow(parsed.getTradeDate()));
 
         flow.setForeignBuy(parsed.getForeignBuy());
         flow.setForeignSell(parsed.getForeignSell());
@@ -64,5 +63,6 @@ public class InstitutionalFlowService {
         flow.setDealerNet(parsed.getDealerNet());
 
         repository.save(flow);
+        log.info("{} institutional flow for {}", existing.isPresent() ? "Updated" : "Inserted", parsed.getTradeDate());
     }
 }
