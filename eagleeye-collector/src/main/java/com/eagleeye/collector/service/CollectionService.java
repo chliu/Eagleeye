@@ -95,18 +95,22 @@ public class CollectionService {
     @Transactional
     protected int processFutures(String html, LocalDate date) {
         List<PositionDto> dtos = taifexParser.parse(html, date);
-        int[] counts = {0, 0}; // [inserted, updated]
-        dtos.forEach(dto -> { if (upsertFutures(dto, date)) counts[0]++; else counts[1]++; });
-        log.info("Futures positions for {}: {} inserted, {} updated", date, counts[0], counts[1]);
+        int inserted = 0, updated = 0;
+        for (PositionDto dto : dtos) {
+            if (upsertFutures(dto, date)) inserted++; else updated++;
+        }
+        log.info("Futures positions for {}: {} inserted, {} updated", date, inserted, updated);
         return dtos.size();
     }
 
     @Transactional
     protected int processOptions(String html, LocalDate date) {
         List<PositionDto> dtos = taifexParser.parse(html, date);
-        int[] counts = {0, 0}; // [inserted, updated]
-        dtos.forEach(dto -> { if (upsertOptions(dto, date)) counts[0]++; else counts[1]++; });
-        log.info("Options positions for {}: {} inserted, {} updated", date, counts[0], counts[1]);
+        int inserted = 0, updated = 0;
+        for (PositionDto dto : dtos) {
+            if (upsertOptions(dto, date)) inserted++; else updated++;
+        }
+        log.info("Options positions for {}: {} inserted, {} updated", date, inserted, updated);
         return dtos.size();
     }
 

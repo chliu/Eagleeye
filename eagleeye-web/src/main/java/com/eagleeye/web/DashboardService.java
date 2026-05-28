@@ -11,7 +11,6 @@ import java.util.*;
 @Service
 public class DashboardService {
 
-    private static final Set<Integer> ALLOWED_DAYS = Set.of(20, 40, 60);
     private static final DateTimeFormatter LABEL_FMT = DateTimeFormatter.ofPattern("M/d");
 
     private final TaiexIndexRepository taiexRepo;
@@ -33,8 +32,6 @@ public class DashboardService {
     }
 
     public DashboardViewModel buildViewModel(int days) {
-        if (!ALLOWED_DAYS.contains(days)) days = 40;
-
         LocalDate to = LocalDate.now();
         LocalDate from = to.minusDays(days * 2L);
 

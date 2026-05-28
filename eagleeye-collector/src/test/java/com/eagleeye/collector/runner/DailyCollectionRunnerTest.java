@@ -1,10 +1,8 @@
 package com.eagleeye.collector.runner;
 
-import com.eagleeye.collector.collector.CollectResult;
 import com.eagleeye.collector.collector.ScheduledCollector;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -19,7 +17,6 @@ class DailyCollectionRunnerTest {
         ScheduledCollector c = mock(ScheduledCollector.class);
         when(c.name()).thenReturn(name);
         when(c.scheduledAt()).thenReturn(scheduledAt);
-        when(c.collect(LocalDate.now())).thenReturn(CollectResult.collected("ok"));
         return c;
     }
 

@@ -62,7 +62,7 @@ class MarginTransactionServiceIT {
     void collectDate_returnsCollected_andPersistsAllTenFields() {
         when(twseClient.fetchMarginJson(DATE)).thenReturn(MARGIN_JSON);
 
-        MarginCollectionResult result = service.collectDate(DATE);
+        DateCollectionResult result = service.collectDate(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
         assertThat(result.tradeDate()).isEqualTo(DATE);
@@ -116,7 +116,7 @@ class MarginTransactionServiceIT {
     void collectDate_returnsNoData_andPersistsNothing_whenApiReturnsNoStat() {
         when(twseClient.fetchMarginJson(DATE)).thenReturn(NO_DATA_JSON);
 
-        MarginCollectionResult result = service.collectDate(DATE);
+        DateCollectionResult result = service.collectDate(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.NO_DATA);
         assertThat(repository.findByTradeDate(DATE)).isEmpty();
@@ -128,7 +128,7 @@ class MarginTransactionServiceIT {
     void collectDate_returnsError_andPersistsNothing_whenClientThrows() {
         when(twseClient.fetchMarginJson(DATE)).thenThrow(new RuntimeException("connection timeout"));
 
-        MarginCollectionResult result = service.collectDate(DATE);
+        DateCollectionResult result = service.collectDate(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.ERROR);
         assertThat(result.errorMessage()).contains("connection timeout");

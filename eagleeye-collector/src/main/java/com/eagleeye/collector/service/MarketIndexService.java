@@ -52,9 +52,11 @@ public class MarketIndexService {
                 }
             });
 
-            int[] counts = {0, 0}; // [inserted, updated]
-            bars.forEach(bar -> { if (upsert(bar)) counts[0]++; else counts[1]++; });
-            log.info("TAIEX bars for {}: {} inserted, {} updated", yearMonth, counts[0], counts[1]);
+            int inserted = 0, updated = 0;
+            for (TaiexIndex bar : bars) {
+                if (upsert(bar)) inserted++; else updated++;
+            }
+            log.info("TAIEX bars for {}: {} inserted, {} updated", yearMonth, inserted, updated);
             return MarketIndexCollectionResult.collected(yearMonth, bars.size());
 
         } catch (Exception e) {

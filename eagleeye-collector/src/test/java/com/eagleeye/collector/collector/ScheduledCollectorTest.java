@@ -75,7 +75,7 @@ class ScheduledCollectorTest {
     @Test
     void iflow_collected_returnsOk() {
         when(institutionalFlowService.collectDate(DATE))
-                .thenReturn(InstitutionalFlowResult.collected(DATE));
+                .thenReturn(DateCollectionResult.collected(DATE));
 
         CollectResult result = new InstitutionalFlowCollector(institutionalFlowService).collect(DATE);
 
@@ -86,7 +86,7 @@ class ScheduledCollectorTest {
     @Test
     void iflow_noData_returnsNoData() {
         when(institutionalFlowService.collectDate(DATE))
-                .thenReturn(InstitutionalFlowResult.noData(DATE));
+                .thenReturn(DateCollectionResult.noData(DATE));
 
         assertThat(new InstitutionalFlowCollector(institutionalFlowService).collect(DATE).status())
                 .isEqualTo(CollectionStatus.NO_DATA);
@@ -95,7 +95,7 @@ class ScheduledCollectorTest {
     @Test
     void iflow_error_returnsError() {
         when(institutionalFlowService.collectDate(DATE))
-                .thenReturn(InstitutionalFlowResult.error(DATE, "connection refused"));
+                .thenReturn(DateCollectionResult.error(DATE, "connection refused"));
 
         CollectResult result = new InstitutionalFlowCollector(institutionalFlowService).collect(DATE);
 
@@ -153,7 +153,7 @@ class ScheduledCollectorTest {
     @Test
     void margin_collected_returnsOk() {
         when(marginTransactionService.collectDate(DATE))
-                .thenReturn(MarginCollectionResult.collected(DATE));
+                .thenReturn(DateCollectionResult.collected(DATE));
 
         CollectResult result = new MarginCollector(marginTransactionService).collect(DATE);
 
@@ -164,7 +164,7 @@ class ScheduledCollectorTest {
     @Test
     void margin_noData_returnsNoData() {
         when(marginTransactionService.collectDate(DATE))
-                .thenReturn(MarginCollectionResult.noData(DATE));
+                .thenReturn(DateCollectionResult.noData(DATE));
 
         assertThat(new MarginCollector(marginTransactionService).collect(DATE).status())
                 .isEqualTo(CollectionStatus.NO_DATA);
@@ -173,7 +173,7 @@ class ScheduledCollectorTest {
     @Test
     void margin_error_returnsError() {
         when(marginTransactionService.collectDate(DATE))
-                .thenReturn(MarginCollectionResult.error(DATE, "HTTP 503"));
+                .thenReturn(DateCollectionResult.error(DATE, "HTTP 503"));
 
         CollectResult result = new MarginCollector(marginTransactionService).collect(DATE);
 

@@ -1,6 +1,6 @@
 package com.eagleeye.shell.commands;
 
-import com.eagleeye.collector.service.MarginCollectionResult;
+import com.eagleeye.collector.service.DateCollectionResult;
 import com.eagleeye.collector.service.MarginTransactionService;
 import com.eagleeye.domain.entity.MarginTransaction;
 import com.eagleeye.domain.repository.MarginTransactionRepository;
@@ -50,17 +50,17 @@ class MarginTransactionCommandsTest {
     }
 
     @Test
-    void list_barFound_returnsFormattedTable() {
-        MarginTransaction bar = new MarginTransaction(LocalDate.of(2026, 3, 18));
-        when(repository.findByTradeDate(LocalDate.of(2026, 3, 18))).thenReturn(Optional.of(bar));
-        when(formatter.formatMarginTransaction(List.of(bar))).thenReturn("rendered");
+    void list_recordFound_returnsFormattedTable() {
+        MarginTransaction tx = new MarginTransaction(LocalDate.of(2026, 3, 18));
+        when(repository.findByTradeDate(LocalDate.of(2026, 3, 18))).thenReturn(Optional.of(tx));
+        when(formatter.formatMarginTransaction(List.of(tx))).thenReturn("rendered");
 
         String result = commands.list("2026-03-18");
         assertThat(result).contains("rendered");
     }
 
     @Test
-    void list_noBarFound_returnsNoData() {
+    void list_noRecordFound_returnsNoData() {
         when(repository.findByTradeDate(any())).thenReturn(Optional.empty());
         String result = commands.list("2026-03-18");
         assertThat(result).containsIgnoringCase("no data");
@@ -92,9 +92,9 @@ class MarginTransactionCommandsTest {
 
     @Test
     void show_returnsFormattedTableWithRowCount() {
-        MarginTransaction bar = new MarginTransaction(LocalDate.of(2026, 3, 18));
-        when(repository.findByTradeDateBetweenOrderByTradeDateAsc(any(), any())).thenReturn(List.of(bar));
-        when(formatter.formatMarginTransaction(List.of(bar))).thenReturn("rendered-table");
+        MarginTransaction tx = new MarginTransaction(LocalDate.of(2026, 3, 18));
+        when(repository.findByTradeDateBetweenOrderByTradeDateAsc(any(), any())).thenReturn(List.of(tx));
+        when(formatter.formatMarginTransaction(List.of(tx))).thenReturn("rendered-table");
 
         String result = commands.show("2026-03-01", "2026-03-18");
         assertThat(result).contains("rendered-table");
@@ -106,7 +106,7 @@ class MarginTransactionCommandsTest {
     @Test
     void collect_defaultsToToday() {
         when(marginTransactionService.collectDate(any()))
-                .thenReturn(MarginCollectionResult.collected(LocalDate.now()));
+                .thenReturn(DateCollectionResult.collected(LocalDate.now()));
 
         commands.collect("");
 

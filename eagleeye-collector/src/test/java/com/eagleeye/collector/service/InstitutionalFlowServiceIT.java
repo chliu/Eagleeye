@@ -58,7 +58,7 @@ class InstitutionalFlowServiceIT {
     void collectDate_returnsCollected_andPersistsAllNineFields() {
         when(twseClient.fetchInstitutionalFlowJson(DATE)).thenReturn(FLOW_JSON);
 
-        InstitutionalFlowResult result = service.collectDate(DATE);
+        DateCollectionResult result = service.collectDate(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
         assertThat(result.tradeDate()).isEqualTo(DATE);
@@ -108,7 +108,7 @@ class InstitutionalFlowServiceIT {
     void collectDate_returnsNoData_andPersistsNothing_whenApiReturnsNoStat() {
         when(twseClient.fetchInstitutionalFlowJson(DATE)).thenReturn(NO_DATA_JSON);
 
-        InstitutionalFlowResult result = service.collectDate(DATE);
+        DateCollectionResult result = service.collectDate(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.NO_DATA);
         assertThat(repository.findByTradeDate(DATE)).isEmpty();
@@ -119,7 +119,7 @@ class InstitutionalFlowServiceIT {
         when(twseClient.fetchInstitutionalFlowJson(DATE))
                 .thenThrow(new RuntimeException("connection timeout"));
 
-        InstitutionalFlowResult result = service.collectDate(DATE);
+        DateCollectionResult result = service.collectDate(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.ERROR);
         assertThat(result.errorMessage()).contains("connection timeout");

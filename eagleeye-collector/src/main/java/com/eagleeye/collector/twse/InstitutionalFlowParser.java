@@ -33,22 +33,19 @@ public class InstitutionalFlowParser {
         try {
             root = objectMapper.readTree(json);
         } catch (Exception e) {
-            log.warn("Failed to parse institutional flow JSON: {}", truncate(json));
+            log.warn("Failed to parse institutional flow JSON: {}", ParseUtils.truncate(json));
             return null;
         }
 
         String stat = root.path("stat").asText("");
         if (!"OK".equals(stat)) {
-            log.info("Institutional flow stat='{}' — no data for {} (raw: {})", stat, date, truncate(json));
+            log.info("Institutional flow stat='{}' — no data for {} (raw: {})", stat, date, ParseUtils.truncate(json));
             return null;
         }
 
-        JsonNode tables = root.path("tables");
-        JsonNode data = (tables.isArray() && !tables.isEmpty())
-                ? tables.get(0).path("data")
-                : root.path("data");
+        JsonNode data = ParseUtils.extractTableData(root);
         if (!data.isArray() || data.isEmpty()) {
-            log.info("Institutional flow data missing for {} (raw: {})", date, truncate(json));
+            log.info("Institutional flow data missing for {} (raw: {})", date, ParseUtils.truncate(json));
             return null;
         }
 
@@ -56,9 +53,9 @@ public class InstitutionalFlowParser {
             InstitutionalFlow flow = new InstitutionalFlow(date);
             for (JsonNode row : data) {
                 String label = row.get(0).asText();
-                long buy  = toLong(row.get(1).asText());
-                long sell = toLong(row.get(2).asText());
-                long net  = toLong(row.get(3).asText());
+                long buy  = ParseUtils.toLong(row.get(1).asText());
+                long sell = ParseUtils.toLong(row.get(2).asText());
+                long net  = ParseUtils.toLong(row.get(3).asText());
                 if (label.contains("Foreign Investors")) {
                     flow.setForeignBuy(buy);
                     flow.setForeignSell(sell);
@@ -86,12 +83,4 @@ public class InstitutionalFlowParser {
         }
     }
 
-    private long toLong(String value) {
-        return Long.parseLong(value.replace(",", ""));
-    }
-
-    private String truncate(String s) {
-        if (s == null) return "<null>";
-        return s.length() > 80 ? s.substring(0, 80) + "..." : s;
-    }
 }

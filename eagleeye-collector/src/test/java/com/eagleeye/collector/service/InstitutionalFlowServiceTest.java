@@ -43,7 +43,7 @@ class InstitutionalFlowServiceTest {
         when(flowParser.parse(FLOW_JSON, DATE)).thenReturn(flow);
         when(repository.findByTradeDate(DATE)).thenReturn(Optional.empty());
 
-        InstitutionalFlowResult result = service.collectDate(DATE);
+        DateCollectionResult result = service.collectDate(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
         assertThat(result.tradeDate()).isEqualTo(DATE);
@@ -55,7 +55,7 @@ class InstitutionalFlowServiceTest {
         when(twseClient.fetchInstitutionalFlowJson(DATE)).thenReturn("{\"stat\":\"NO DATA\"}");
         when(flowParser.parse(any(), eq(DATE))).thenReturn(null);
 
-        InstitutionalFlowResult result = service.collectDate(DATE);
+        DateCollectionResult result = service.collectDate(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.NO_DATA);
         verify(repository, never()).save(any());
@@ -65,7 +65,7 @@ class InstitutionalFlowServiceTest {
     void collectDate_clientThrows_returnsError() {
         when(twseClient.fetchInstitutionalFlowJson(DATE)).thenThrow(new RuntimeException("timeout"));
 
-        InstitutionalFlowResult result = service.collectDate(DATE);
+        DateCollectionResult result = service.collectDate(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.ERROR);
         assertThat(result.errorMessage()).contains("timeout");

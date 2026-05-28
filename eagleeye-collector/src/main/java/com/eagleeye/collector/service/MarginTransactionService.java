@@ -29,7 +29,7 @@ public class MarginTransactionService {
     }
 
     @Transactional
-    public MarginCollectionResult collectDate(LocalDate date) {
+    public DateCollectionResult collectDate(LocalDate date) {
         try {
             String json = twseClient.fetchMarginJson(date);
             log.debug("Margin raw JSON for {}: {}", date,
@@ -37,14 +37,14 @@ public class MarginTransactionService {
             MarginTransaction parsed = parser.parse(json, date);
             if (parsed == null) {
                 log.info("No margin data for {}", date);
-                return MarginCollectionResult.noData(date);
+                return DateCollectionResult.noData(date);
             }
             upsert(parsed);
             log.info("Collected margin data for {}", date);
-            return MarginCollectionResult.collected(date);
+            return DateCollectionResult.collected(date);
         } catch (Exception e) {
             log.error("Margin collection failed for {}: {}", date, e.getMessage(), e);
-            return MarginCollectionResult.error(date, e.getMessage());
+            return DateCollectionResult.error(date, e.getMessage());
         }
     }
 

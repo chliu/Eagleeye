@@ -29,7 +29,7 @@ public class InstitutionalFlowService {
     }
 
     @Transactional
-    public InstitutionalFlowResult collectDate(LocalDate date) {
+    public DateCollectionResult collectDate(LocalDate date) {
         try {
             String json = twseClient.fetchInstitutionalFlowJson(date);
             log.debug("Institutional flow raw JSON for {}: {}", date,
@@ -37,14 +37,14 @@ public class InstitutionalFlowService {
             InstitutionalFlow parsed = parser.parse(json, date);
             if (parsed == null) {
                 log.info("No institutional flow data for {}", date);
-                return InstitutionalFlowResult.noData(date);
+                return DateCollectionResult.noData(date);
             }
             upsert(parsed);
             log.info("Collected institutional flow data for {}", date);
-            return InstitutionalFlowResult.collected(date);
+            return DateCollectionResult.collected(date);
         } catch (Exception e) {
             log.error("Institutional flow collection failed for {}: {}", date, e.getMessage(), e);
-            return InstitutionalFlowResult.error(date, e.getMessage());
+            return DateCollectionResult.error(date, e.getMessage());
         }
     }
 

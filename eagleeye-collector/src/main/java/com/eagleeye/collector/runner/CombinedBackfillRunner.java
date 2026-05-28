@@ -2,9 +2,8 @@ package com.eagleeye.collector.runner;
 
 import com.eagleeye.collector.service.CollectionResult;
 import com.eagleeye.collector.service.CollectionService;
-import com.eagleeye.collector.service.InstitutionalFlowResult;
+import com.eagleeye.collector.service.DateCollectionResult;
 import com.eagleeye.collector.service.InstitutionalFlowService;
-import com.eagleeye.collector.service.MarginCollectionResult;
 import com.eagleeye.collector.service.MarginTransactionService;
 import com.eagleeye.collector.service.MarketIndexCollectionResult;
 import com.eagleeye.collector.service.MarketIndexService;
@@ -115,12 +114,12 @@ public class CombinedBackfillRunner implements ApplicationRunner {
                     printTaifex(day, result);
                     Thread.sleep(requestDelayMs);
 
-                    MarginCollectionResult marginResult = marginTransactionService.collectDate(day);
-                    printMargin(day, marginResult);
+                    DateCollectionResult marginResult = marginTransactionService.collectDate(day);
+                    printDateResult("MARGIN", day, marginResult);
                     Thread.sleep(requestDelayMs);
 
-                    InstitutionalFlowResult flowResult = institutionalFlowService.collectDate(day);
-                    printInstitutionalFlow(day, flowResult);
+                    DateCollectionResult flowResult = institutionalFlowService.collectDate(day);
+                    printDateResult("IFLOW ", day, flowResult);
                     Thread.sleep(requestDelayMs);
                 }
                 day = day.plusDays(1);
@@ -149,21 +148,12 @@ public class CombinedBackfillRunner implements ApplicationRunner {
         System.out.printf("  [TAIFEX]  %-12s  %s%n", date, status);
     }
 
-    private void printMargin(LocalDate date, MarginCollectionResult r) {
+    private void printDateResult(String label, LocalDate date, DateCollectionResult r) {
         String status = switch (r.status()) {
             case COLLECTED -> "collected";
             case NO_DATA   -> "no data";
             case ERROR     -> "ERROR: " + r.errorMessage();
         };
-        System.out.printf("  [MARGIN]  %-12s  %s%n", date, status);
-    }
-
-    private void printInstitutionalFlow(LocalDate date, InstitutionalFlowResult r) {
-        String status = switch (r.status()) {
-            case COLLECTED -> "collected";
-            case NO_DATA   -> "no data";
-            case ERROR     -> "ERROR: " + r.errorMessage();
-        };
-        System.out.printf("  [IFLOW]   %-12s  %s%n", date, status);
+        System.out.printf("  [%s]  %-12s  %s%n", label, date, status);
     }
 }

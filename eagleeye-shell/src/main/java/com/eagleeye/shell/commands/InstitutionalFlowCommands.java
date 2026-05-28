@@ -1,6 +1,6 @@
 package com.eagleeye.shell.commands;
 
-import com.eagleeye.collector.service.InstitutionalFlowResult;
+import com.eagleeye.collector.service.DateCollectionResult;
 import com.eagleeye.collector.service.InstitutionalFlowService;
 import com.eagleeye.domain.entity.InstitutionalFlow;
 import com.eagleeye.domain.repository.InstitutionalFlowRepository;
@@ -80,7 +80,7 @@ public class InstitutionalFlowCommands {
         return sb.toString().stripTrailing();
     }
 
-    private String formatResult(InstitutionalFlowResult r) {
+    private String formatResult(DateCollectionResult r) {
         return switch (r.status()) {
             case COLLECTED -> r.tradeDate() + " \u2014 collected";
             case NO_DATA   -> r.tradeDate() + " \u2014 no data";

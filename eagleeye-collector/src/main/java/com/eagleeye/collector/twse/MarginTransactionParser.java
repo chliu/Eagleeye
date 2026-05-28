@@ -30,23 +30,20 @@ public class MarginTransactionParser {
         try {
             root = objectMapper.readTree(json);
         } catch (Exception e) {
-            log.warn("Failed to parse margin JSON: {}", truncate(json));
+            log.warn("Failed to parse margin JSON: {}", ParseUtils.truncate(json));
             return null;
         }
 
         String stat = root.path("stat").asText("");
         if (!"OK".equals(stat)) {
-            log.info("Margin stat='{}' — no data for {} (raw: {})", stat, date, truncate(json));
+            log.info("Margin stat='{}' — no data for {} (raw: {})", stat, date, ParseUtils.truncate(json));
             return null;
         }
 
-        JsonNode tables = root.path("tables");
-        JsonNode data = (tables.isArray() && !tables.isEmpty())
-                ? tables.get(0).path("data")
-                : root.path("data");
+        JsonNode data = ParseUtils.extractTableData(root);
         if (!data.isArray() || data.size() < 2) {
             log.info("Margin data missing or incomplete for {} — {} rows (raw: {})",
-                    date, data.size(), truncate(json));
+                    date, data.size(), ParseUtils.truncate(json));
             return null;
         }
 
@@ -56,30 +53,22 @@ public class MarginTransactionParser {
             JsonNode marginRow = data.get(0);
             JsonNode shortRow  = data.get(1);
 
-            MarginTransaction existing = new MarginTransaction(date);
-            existing.setMarginPurchase(toLong(marginRow.get(1).asText()));
-            existing.setMarginSale(toLong(marginRow.get(2).asText()));
-            existing.setMarginCashRedemption(toLong(marginRow.get(3).asText()));
-            existing.setMarginPrevBalance(toLong(marginRow.get(4).asText()));
-            existing.setMarginBalance(toLong(marginRow.get(5).asText()));
-            existing.setShortCovering(toLong(shortRow.get(1).asText()));
-            existing.setShortSale(toLong(shortRow.get(2).asText()));
-            existing.setShortStockRedemption(toLong(shortRow.get(3).asText()));
-            existing.setShortPrevBalance(toLong(shortRow.get(4).asText()));
-            existing.setShortBalance(toLong(shortRow.get(5).asText()));
-            return existing;
+            MarginTransaction tx = new MarginTransaction(date);
+            tx.setMarginPurchase(ParseUtils.toLong(marginRow.get(1).asText()));
+            tx.setMarginSale(ParseUtils.toLong(marginRow.get(2).asText()));
+            tx.setMarginCashRedemption(ParseUtils.toLong(marginRow.get(3).asText()));
+            tx.setMarginPrevBalance(ParseUtils.toLong(marginRow.get(4).asText()));
+            tx.setMarginBalance(ParseUtils.toLong(marginRow.get(5).asText()));
+            tx.setShortCovering(ParseUtils.toLong(shortRow.get(1).asText()));
+            tx.setShortSale(ParseUtils.toLong(shortRow.get(2).asText()));
+            tx.setShortStockRedemption(ParseUtils.toLong(shortRow.get(3).asText()));
+            tx.setShortPrevBalance(ParseUtils.toLong(shortRow.get(4).asText()));
+            tx.setShortBalance(ParseUtils.toLong(shortRow.get(5).asText()));
+            return tx;
         } catch (Exception e) {
             log.warn("Failed to parse margin data rows for {}: {}", date, e.getMessage());
             return null;
         }
     }
 
-    private long toLong(String value) {
-        return Long.parseLong(value.replace(",", ""));
-    }
-
-    private String truncate(String s) {
-        if (s == null) return "<null>";
-        return s.length() > 80 ? s.substring(0, 80) + "..." : s;
-    }
 }

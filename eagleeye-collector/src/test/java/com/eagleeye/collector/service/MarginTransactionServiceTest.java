@@ -38,12 +38,12 @@ class MarginTransactionServiceTest {
 
     @Test
     void collectDate_success_savesAndReturnsCollected() {
-        MarginTransaction bar = new MarginTransaction(DATE);
+        MarginTransaction tx = new MarginTransaction(DATE);
         when(twseClient.fetchMarginJson(DATE)).thenReturn(MARGIN_JSON);
-        when(marginParser.parse(MARGIN_JSON, DATE)).thenReturn(bar);
+        when(marginParser.parse(MARGIN_JSON, DATE)).thenReturn(tx);
         when(repository.findByTradeDate(DATE)).thenReturn(Optional.empty());
 
-        MarginCollectionResult result = service.collectDate(DATE);
+        DateCollectionResult result = service.collectDate(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
         assertThat(result.tradeDate()).isEqualTo(DATE);
@@ -55,7 +55,7 @@ class MarginTransactionServiceTest {
         when(twseClient.fetchMarginJson(DATE)).thenReturn("{\"stat\":\"NO DATA\"}");
         when(marginParser.parse(any(), eq(DATE))).thenReturn(null);
 
-        MarginCollectionResult result = service.collectDate(DATE);
+        DateCollectionResult result = service.collectDate(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.NO_DATA);
         verify(repository, never()).save(any());
@@ -65,7 +65,7 @@ class MarginTransactionServiceTest {
     void collectDate_clientThrows_returnsError() {
         when(twseClient.fetchMarginJson(DATE)).thenThrow(new RuntimeException("timeout"));
 
-        MarginCollectionResult result = service.collectDate(DATE);
+        DateCollectionResult result = service.collectDate(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.ERROR);
         assertThat(result.errorMessage()).contains("timeout");
@@ -73,7 +73,7 @@ class MarginTransactionServiceTest {
     }
 
     @Test
-    void collectDate_existingBar_upserts() {
+    void collectDate_existingRecord_upserts() {
         MarginTransaction existing = new MarginTransaction(DATE);
         MarginTransaction parsed   = new MarginTransaction(DATE);
         parsed.setMarginBalance(8_109_024L);

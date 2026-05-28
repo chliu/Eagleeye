@@ -1,6 +1,6 @@
 package com.eagleeye.shell.commands;
 
-import com.eagleeye.collector.service.InstitutionalFlowResult;
+import com.eagleeye.collector.service.DateCollectionResult;
 import com.eagleeye.collector.service.InstitutionalFlowService;
 import com.eagleeye.domain.entity.InstitutionalFlow;
 import com.eagleeye.domain.repository.InstitutionalFlowRepository;
@@ -106,7 +106,7 @@ class InstitutionalFlowCommandsTest {
     @Test
     void collect_defaultsToToday() {
         when(service.collectDate(any()))
-                .thenReturn(InstitutionalFlowResult.collected(LocalDate.now()));
+                .thenReturn(DateCollectionResult.collected(LocalDate.now()));
 
         commands.collect("");
 
@@ -116,7 +116,7 @@ class InstitutionalFlowCommandsTest {
     @Test
     void collect_collected_containsCollected() {
         when(service.collectDate(any()))
-                .thenReturn(InstitutionalFlowResult.collected(LocalDate.of(2026, 3, 19)));
+                .thenReturn(DateCollectionResult.collected(LocalDate.of(2026, 3, 19)));
 
         String result = commands.collect("2026-03-19");
         assertThat(result).containsIgnoringCase("collected");
@@ -125,7 +125,7 @@ class InstitutionalFlowCommandsTest {
     @Test
     void collect_noData_containsNoData() {
         when(service.collectDate(any()))
-                .thenReturn(InstitutionalFlowResult.noData(LocalDate.of(2026, 3, 19)));
+                .thenReturn(DateCollectionResult.noData(LocalDate.of(2026, 3, 19)));
 
         String result = commands.collect("2026-03-19");
         assertThat(result).containsIgnoringCase("no data");
@@ -137,7 +137,7 @@ class InstitutionalFlowCommandsTest {
     void backfill_skipsWeekends_onlyCallsServiceOnWeekdays() {
         // 2026-03-06 (Fri) to 2026-03-09 (Mon) = 2 weekdays
         when(service.collectDate(any()))
-                .thenReturn(InstitutionalFlowResult.collected(LocalDate.now()));
+                .thenReturn(DateCollectionResult.collected(LocalDate.now()));
 
         commands.backfill("2026-03-06", "2026-03-09");
 
@@ -151,7 +151,7 @@ class InstitutionalFlowCommandsTest {
     @Test
     void backfill_singleDay_returnsResult() {
         when(service.collectDate(LocalDate.of(2026, 3, 19)))
-                .thenReturn(InstitutionalFlowResult.collected(LocalDate.of(2026, 3, 19)));
+                .thenReturn(DateCollectionResult.collected(LocalDate.of(2026, 3, 19)));
 
         String result = commands.backfill("2026-03-19", "2026-03-19");
         assertThat(result).containsIgnoringCase("collected");

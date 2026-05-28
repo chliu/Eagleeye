@@ -2,9 +2,8 @@ package com.eagleeye.collector.runner;
 
 import com.eagleeye.collector.service.CollectionResult;
 import com.eagleeye.collector.service.CollectionService;
-import com.eagleeye.collector.service.InstitutionalFlowResult;
+import com.eagleeye.collector.service.DateCollectionResult;
 import com.eagleeye.collector.service.InstitutionalFlowService;
-import com.eagleeye.collector.service.MarginCollectionResult;
 import com.eagleeye.collector.service.MarginTransactionService;
 import com.eagleeye.collector.service.MarketIndexCollectionResult;
 import com.eagleeye.collector.service.MarketIndexService;
@@ -200,11 +199,11 @@ class CombinedBackfillRunnerTest {
 
     private void stubMargin() {
         when(marginTransactionService.collectDate(any(LocalDate.class)))
-                .thenReturn(MarginCollectionResult.collected(LocalDate.now()));
+                .thenReturn(DateCollectionResult.collected(LocalDate.now()));
     }
 
     private void stubFlow() {
         when(institutionalFlowService.collectDate(any(LocalDate.class)))
-                .thenReturn(InstitutionalFlowResult.collected(LocalDate.now()));
+                .thenReturn(DateCollectionResult.collected(LocalDate.now()));
     }
 }
