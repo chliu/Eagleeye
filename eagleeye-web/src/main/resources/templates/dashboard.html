@@ -132,6 +132,19 @@ body {
 .down { color: var(--green); }
 .neu  { color: var(--muted); }
 .settle { color: var(--amber); }
+
+/* ── Footer ─────────────────────────────────────────────────────────── */
+.footer {
+  max-width: 1200px;
+  margin: 14px auto 0;
+  padding: 10px 16px 18px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border);
+}
+.footer-item { font-size: 10px; color: var(--muted); white-space: nowrap; }
+.footer-item .time { color: var(--amber); margin-right: 4px; }
 </style>
 </head>
 <body>
@@ -175,11 +188,25 @@ body {
 
   </div>
 
-  <div class="chart-card" style="margin-top:10px;">
-    <div class="chart-title">外資期貨日增減（多單 vs 空單）</div>
-    <div id="futuresDeltaTable"></div>
+  <div class="chart-grid" style="margin-top:10px;">
+    <div class="chart-card">
+      <div class="chart-title">外資期貨日增減（多單 vs 空單）</div>
+      <div id="futuresDeltaTable"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">外資選擇權日增減（多單 vs 空單）</div>
+      <div id="optionsDeltaTable"></div>
+    </div>
   </div>
 
+</div>
+
+<div class="footer">
+  <div class="footer-item"><span class="time">07:00</span>夜盤期貨</div>
+  <div class="footer-item"><span class="time">15:05</span>加權指數</div>
+  <div class="footer-item"><span class="time">15:15</span>外資買賣超（三大法人）</div>
+  <div class="footer-item"><span class="time">15:30</span>期貨 / 選擇權部位</div>
+  <div class="footer-item"><span class="time">21:35</span>融資融券</div>
 </div>
 
 <script th:inline="javascript">
@@ -339,6 +366,8 @@ function delta(arr) {
 }
 const futLongDelta  = delta(futLong);
 const futShortDelta = delta(futShort);
+const optCallDelta  = delta(optCall);
+const optPutDelta   = delta(optPut);
 
 const NEU = '<span class="neu">—</span>';
 function fmtDelta(v) {
@@ -384,6 +413,37 @@ function fmtVol(v) {
     </tr>`).join('')}</tbody>
   </table>`;
   document.getElementById('futuresDeltaTable').innerHTML = html;
+})();
+
+(function buildOptionsTable() {
+  const rows = labels.map((lbl, i) => {
+    const settle = isSettlement(isoDates[i]);
+    const l = optCall[i], s = optPut[i];
+    return {
+      lbl: settle ? `<span class="settle">${lbl} *</span>` : lbl,
+      long: l, longD: optCallDelta[i],
+      short: s, shortD: optPutDelta[i],
+      net: (l != null && s != null) ? l - s : null
+    };
+  }).reverse();
+
+  const html = `<table class="delta-table">
+    <thead><tr>
+      <th>日期</th>
+      <th>多單</th><th>Δ多單</th>
+      <th>空單</th><th>Δ空單</th>
+      <th>淨部位</th>
+    </tr></thead>
+    <tbody>${rows.map(r => `<tr>
+      <td>${r.lbl}</td>
+      <td>${fmtVol(r.long)}</td>
+      <td>${fmtDelta(r.longD)}</td>
+      <td>${fmtVol(r.short)}</td>
+      <td>${fmtDelta(r.shortD)}</td>
+      <td>${fmtNet(r.net)}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+  document.getElementById('optionsDeltaTable').innerHTML = html;
 })();
 /*]]>*/
 </script>
