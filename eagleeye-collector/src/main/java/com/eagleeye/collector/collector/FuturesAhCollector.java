@@ -9,8 +9,7 @@ import java.time.LocalTime;
 @Component
 public class FuturesAhCollector implements ScheduledCollector {
 
-    // After-hours session ends 05:00 on the attributed date; 09:05 gives a safe margin
-    private static final LocalTime SCHEDULED_AT = LocalTime.of(9, 5);
+    private static final LocalTime SCHEDULED_AT = LocalTime.of(7, 0);
 
     private final FuturesAhService service;
 

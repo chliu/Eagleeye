@@ -118,6 +118,66 @@ class TaifexParserTest {
     }
 
     // -----------------------------------------------------------------------
+    // After-hours table: 6-column (trading only, no OI)
+    // -----------------------------------------------------------------------
+
+    @Test
+    void parseAh_extracts_six_column_trading_data() {
+        String html = buildTable(
+                traderRowAh(true,  "1", "TX", "Dealers",          "500", "3200000", "300", "1920000", "200", "1280000"),
+                traderRowAh(false, null, null, "Investment Trust",  "10",   "64000",  "20",  "128000", "-10",  "-64000"),
+                traderRowAh(false, null, null, "FINI",             "200", "1280000", "150",  "960000",  "50",  "320000")
+        );
+
+        List<PositionDto> results = parser.parseAh(html, TEST_DATE);
+
+        assertThat(results).hasSize(3);
+
+        PositionDto dealer = findBy(results, TraderType.DEALER);
+        assertThat(dealer.contract()).isEqualTo("TX");
+        assertThat(dealer.tradingLongVolume()).isEqualTo(500L);
+        assertThat(dealer.tradingLongValue()).isEqualTo(3200000L);
+        assertThat(dealer.tradingShortVolume()).isEqualTo(300L);
+        assertThat(dealer.tradingShortValue()).isEqualTo(1920000L);
+        assertThat(dealer.tradingNetVolume()).isEqualTo(200L);
+        assertThat(dealer.tradingNetValue()).isEqualTo(1280000L);
+        // OI is absent for after-hours — must be zero
+        assertThat(dealer.oiLongVolume()).isZero();
+        assertThat(dealer.oiLongValue()).isZero();
+        assertThat(dealer.oiShortVolume()).isZero();
+        assertThat(dealer.oiShortValue()).isZero();
+        assertThat(dealer.oiNetVolume()).isZero();
+        assertThat(dealer.oiNetValue()).isZero();
+
+        PositionDto it = findBy(results, TraderType.INVESTMENT_TRUST);
+        assertThat(it.tradingNetVolume()).isEqualTo(-10L);
+
+        PositionDto fini = findBy(results, TraderType.FINI);
+        assertThat(fini.tradingLongVolume()).isEqualTo(200L);
+    }
+
+    @Test
+    void parseAh_handles_negative_parenthesised_values() {
+        String html = buildTable(
+                traderRowAh(true, "1", "TX", "Dealers",          "100", "640000", "200", "1280000", "(100)", "(640000)"),
+                traderRowAh(false, null, null, "Investment Trust", "10",  "64000",  "20",  "128000",  "(10)",  "(64000)"),
+                traderRowAh(false, null, null, "FINI",             "50",  "320000", "80",  "512000",  "(30)",  "(192000)")
+        );
+
+        List<PositionDto> results = parser.parseAh(html, TEST_DATE);
+
+        PositionDto dealer = findBy(results, TraderType.DEALER);
+        assertThat(dealer.tradingNetVolume()).isEqualTo(-100L);
+        assertThat(dealer.tradingNetValue()).isEqualTo(-640000L);
+    }
+
+    @Test
+    void parseAh_returns_empty_when_no_data() {
+        List<PositionDto> results = parser.parseAh("<html><body>No Data</body></html>", TEST_DATE);
+        assertThat(results).isEmpty();
+    }
+
+    // -----------------------------------------------------------------------
     // isNoDataPage
     // -----------------------------------------------------------------------
 
@@ -171,6 +231,26 @@ class TaifexParserTest {
         }
         sb.append("<td>").append(trader).append("</td>");
         for (String val : List.of(tlv, tlval, tsv, tsval, tnv, tnval, olv, olval, osv, osval, onv, onval)) {
+            sb.append("<td>").append(val).append("</td>");
+        }
+        sb.append("</tr>");
+        return sb.toString();
+    }
+
+    /**
+     * Builds an after-hours trader row with 6 data columns (trading only, no OI).
+     */
+    private String traderRowAh(boolean isFirstInGroup, String sn, String contract, String trader,
+                                String tlv, String tlval,
+                                String tsv, String tsval,
+                                String tnv, String tnval) {
+        StringBuilder sb = new StringBuilder("<tr>");
+        if (isFirstInGroup) {
+            sb.append("<td rowspan='3'>").append(sn).append("</td>");
+            sb.append("<td rowspan='3'>").append(contract).append("</td>");
+        }
+        sb.append("<td>").append(trader).append("</td>");
+        for (String val : List.of(tlv, tlval, tsv, tsval, tnv, tnval)) {
             sb.append("<td>").append(val).append("</td>");
         }
         sb.append("</tr>");

@@ -23,6 +23,7 @@ import java.util.List;
  * Daily one-shot runner — picks the right collector for the current Taipei time and exits.
  *
  * launchd fires this process four times per weekday (Taipei time):
+ *   07:00  → FUTAH  after-hours futures  (夜盤 session ends 05:00 on attributed date)
  *   15:05  → TAIEX  market index        (FMTQIK afterTrading stats published ~15:00)
  *   15:15  → IFLOW  institutional flow  (三大法人 published ~15:00)
  *   15:30  → TAIFEX TAIFEX OI           (未平倉口數及契約金額 published ~15:00)

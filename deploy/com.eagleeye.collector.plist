@@ -20,7 +20,7 @@
     <!--
         Five independent collections Mon–Fri (Taipei local time, Asia/Taipei).
         launchd StartCalendarInterval uses local time — NOT UTC.
-          09:05: after-hours futures — 夜盤 session ends 05:00 on the attributed date
+          07:00: after-hours futures — 夜盤 session ends 05:00 on the attributed date
           15:05: market index        — TWSE FMTQIK afterTrading stats published ~15:00
           15:15: institutional flow  — TWSE 三大法人 published ~15:00
           15:30: TAIFEX OI           — 未平倉口數及契約金額 published ~15:00
@@ -28,12 +28,12 @@
     -->
     <key>StartCalendarInterval</key>
     <array>
-        <!-- 09:05 Taipei: after-hours futures (夜盤) -->
-        <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>5</integer></dict>
-        <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>5</integer></dict>
-        <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>5</integer></dict>
-        <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>5</integer></dict>
-        <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>5</integer></dict>
+        <!-- 07:00 Taipei: after-hours futures (夜盤) -->
+        <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>0</integer></dict>
         <!-- 15:05 Taipei: market index -->
         <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>5</integer></dict>
         <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>5</integer></dict>
