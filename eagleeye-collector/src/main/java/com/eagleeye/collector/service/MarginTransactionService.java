@@ -48,22 +48,22 @@ public class MarginTransactionService {
         }
     }
 
-    private void upsert(MarginTransaction parsed) {
-        var found = repository.findByTradeDate(parsed.getTradeDate());
-        MarginTransaction existing = found.orElseGet(() -> new MarginTransaction(parsed.getTradeDate()));
+    private void upsert(MarginTransaction source) {
+        var existing = repository.findByTradeDate(source.getTradeDate());
+        MarginTransaction tx = existing.orElseGet(() -> new MarginTransaction(source.getTradeDate()));
 
-        existing.setMarginPurchase(parsed.getMarginPurchase());
-        existing.setMarginSale(parsed.getMarginSale());
-        existing.setMarginCashRedemption(parsed.getMarginCashRedemption());
-        existing.setMarginPrevBalance(parsed.getMarginPrevBalance());
-        existing.setMarginBalance(parsed.getMarginBalance());
-        existing.setShortCovering(parsed.getShortCovering());
-        existing.setShortSale(parsed.getShortSale());
-        existing.setShortStockRedemption(parsed.getShortStockRedemption());
-        existing.setShortPrevBalance(parsed.getShortPrevBalance());
-        existing.setShortBalance(parsed.getShortBalance());
+        tx.setMarginPurchase(source.getMarginPurchase());
+        tx.setMarginSale(source.getMarginSale());
+        tx.setMarginCashRedemption(source.getMarginCashRedemption());
+        tx.setMarginPrevBalance(source.getMarginPrevBalance());
+        tx.setMarginBalance(source.getMarginBalance());
+        tx.setShortCovering(source.getShortCovering());
+        tx.setShortSale(source.getShortSale());
+        tx.setShortStockRedemption(source.getShortStockRedemption());
+        tx.setShortPrevBalance(source.getShortPrevBalance());
+        tx.setShortBalance(source.getShortBalance());
 
-        repository.save(existing);
-        log.info("{} margin transaction for {}", found.isPresent() ? "Updated" : "Inserted", parsed.getTradeDate());
+        repository.save(tx);
+        log.info("{} margin transaction for {}", existing.isPresent() ? "Updated" : "Inserted", source.getTradeDate());
     }
 }

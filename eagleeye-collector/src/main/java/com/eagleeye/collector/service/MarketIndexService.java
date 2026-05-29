@@ -69,17 +69,16 @@ public class MarketIndexService {
         return collectMonth(YearMonth.from(date));
     }
 
-    // Returns true if inserted, false if updated
-    private boolean upsert(TaiexIndex parsed) {
-        var existing = repository.findByTradeDate(parsed.getTradeDate());
-        TaiexIndex bar = existing.orElseGet(() -> new TaiexIndex(parsed.getTradeDate()));
+    private boolean upsert(TaiexIndex source) {
+        var existing = repository.findByTradeDate(source.getTradeDate());
+        TaiexIndex bar = existing.orElseGet(() -> new TaiexIndex(source.getTradeDate()));
 
-        bar.setOpen(parsed.getOpen());
-        bar.setHigh(parsed.getHigh());
-        bar.setLow(parsed.getLow());
-        bar.setClose(parsed.getClose());
-        bar.setVolume(parsed.getVolume());
-        bar.setTurnover(parsed.getTurnover());
+        bar.setOpen(source.getOpen());
+        bar.setHigh(source.getHigh());
+        bar.setLow(source.getLow());
+        bar.setClose(source.getClose());
+        bar.setVolume(source.getVolume());
+        bar.setTurnover(source.getTurnover());
 
         repository.save(bar);
         return existing.isEmpty();

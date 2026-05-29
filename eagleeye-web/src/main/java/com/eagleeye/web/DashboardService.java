@@ -1,12 +1,27 @@
 package com.eagleeye.web;
 
-import com.eagleeye.domain.entity.*;
-import com.eagleeye.domain.repository.*;
+import com.eagleeye.domain.entity.FuturesPosition;
+import com.eagleeye.domain.entity.InstitutionalFlow;
+import com.eagleeye.domain.entity.MarginTransaction;
+import com.eagleeye.domain.entity.OptionsPosition;
+import com.eagleeye.domain.entity.TaiexIndex;
+import com.eagleeye.domain.entity.TraderType;
+import com.eagleeye.domain.repository.FuturesPositionRepository;
+import com.eagleeye.domain.repository.InstitutionalFlowRepository;
+import com.eagleeye.domain.repository.MarginTransactionRepository;
+import com.eagleeye.domain.repository.OptionsPositionRepository;
+import com.eagleeye.domain.repository.TaiexIndexRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+
+import static java.util.stream.Collectors.toMap;
 
 @Service
 public class DashboardService {
@@ -83,17 +98,8 @@ public class DashboardService {
 
             spotNetFlow.add(fl != null ? fl.getForeignNet() : null);
 
-            if (mg != null) {
-                long mBalance = mg.getMarginBalance()     != null ? mg.getMarginBalance()     : 0L;
-                long mPrev    = mg.getMarginPrevBalance() != null ? mg.getMarginPrevBalance() : 0L;
-                marginChange.add(mBalance - mPrev);
-                long sBalance = mg.getShortBalance()     != null ? mg.getShortBalance()     : 0L;
-                long sPrev    = mg.getShortPrevBalance() != null ? mg.getShortPrevBalance() : 0L;
-                shortChange.add(sBalance - sPrev);
-            } else {
-                marginChange.add(null);
-                shortChange.add(null);
-            }
+            marginChange.add(mg != null ? balanceDelta(mg.getMarginBalance(), mg.getMarginPrevBalance()) : null);
+            shortChange.add(mg != null ? balanceDelta(mg.getShortBalance(), mg.getShortPrevBalance()) : null);
 
             futuresLongOI.add(fp != null ? fp.getOiLongVolume()  : null);
             futuresShortOI.add(fp != null ? fp.getOiShortVolume() : null);
@@ -110,10 +116,11 @@ public class DashboardService {
             days);
     }
 
-    private <T> Map<LocalDate, T> indexByDate(List<T> list,
-                                               java.util.function.Function<T, LocalDate> keyFn) {
-        Map<LocalDate, T> map = new LinkedHashMap<>();
-        for (T item : list) map.put(keyFn.apply(item), item);
-        return map;
+    private static long balanceDelta(Long balance, Long prevBalance) {
+        return (balance != null ? balance : 0L) - (prevBalance != null ? prevBalance : 0L);
+    }
+
+    private <T> Map<LocalDate, T> indexByDate(List<T> list, Function<T, LocalDate> keyFn) {
+        return list.stream().collect(toMap(keyFn, Function.identity(), (a, b) -> b, LinkedHashMap::new));
     }
 }

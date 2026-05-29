@@ -48,21 +48,21 @@ public class InstitutionalFlowService {
         }
     }
 
-    private void upsert(InstitutionalFlow parsed) {
-        var existing = repository.findByTradeDate(parsed.getTradeDate());
-        InstitutionalFlow flow = existing.orElseGet(() -> new InstitutionalFlow(parsed.getTradeDate()));
+    private void upsert(InstitutionalFlow source) {
+        var existing = repository.findByTradeDate(source.getTradeDate());
+        InstitutionalFlow flow = existing.orElseGet(() -> new InstitutionalFlow(source.getTradeDate()));
 
-        flow.setForeignBuy(parsed.getForeignBuy());
-        flow.setForeignSell(parsed.getForeignSell());
-        flow.setForeignNet(parsed.getForeignNet());
-        flow.setInvestmentTrustBuy(parsed.getInvestmentTrustBuy());
-        flow.setInvestmentTrustSell(parsed.getInvestmentTrustSell());
-        flow.setInvestmentTrustNet(parsed.getInvestmentTrustNet());
-        flow.setDealerBuy(parsed.getDealerBuy());
-        flow.setDealerSell(parsed.getDealerSell());
-        flow.setDealerNet(parsed.getDealerNet());
+        flow.setForeignBuy(source.getForeignBuy());
+        flow.setForeignSell(source.getForeignSell());
+        flow.setForeignNet(source.getForeignNet());
+        flow.setInvestmentTrustBuy(source.getInvestmentTrustBuy());
+        flow.setInvestmentTrustSell(source.getInvestmentTrustSell());
+        flow.setInvestmentTrustNet(source.getInvestmentTrustNet());
+        flow.setDealerBuy(source.getDealerBuy());
+        flow.setDealerSell(source.getDealerSell());
+        flow.setDealerNet(source.getDealerNet());
 
         repository.save(flow);
-        log.info("{} institutional flow for {}", existing.isPresent() ? "Updated" : "Inserted", parsed.getTradeDate());
+        log.info("{} institutional flow for {}", existing.isPresent() ? "Updated" : "Inserted", source.getTradeDate());
     }
 }
