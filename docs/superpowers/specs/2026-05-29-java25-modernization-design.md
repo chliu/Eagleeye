@@ -39,7 +39,7 @@ public record CollectionResult(
 
 ### Solution
 
-Convert each result type into a **sealed interface with variant records**. Delete `CollectionStatus`.
+Convert each result type into a **sealed interface with variant records**. Keep `CollectionStatus` (it is still used by a separate `CollectResult` record in the `collector` package, which represents pipeline status and is out of scope for this refactor). The three sealed result types simply no longer reference `CollectionStatus`.
 
 ```java
 // eagleeye-collector/.../service/CollectionResult.java
@@ -104,7 +104,9 @@ switch (result) {
 ```
 
 Touched switch sites:
-- `BackfillRunner.run()` — `result.status()` switch
+- `BackfillRunner.run()` — `result.status()` switch (+ `printSummary` aggregation)
+- `MarketIndexBackfillRunner.printRow()` + `printSummary()` — uses `result.status()` and `CollectionStatus.{NO_DATA,ERROR}` constants
+- `FuturesAhBackfillRunner.printRow()` + `printSummary()` — uses `result.status()` and `CollectionStatus.{COLLECTED,NO_DATA,ERROR}` constants
 - `InstitutionalFlowCommands.formatResult()`
 - `MarginTransactionCommands.formatResult()`
 - `MarketIndexCommands.formatResult()`
@@ -131,9 +133,9 @@ This is slightly more verbose at the aggregation site, but the rest of the codeb
 
 ### Helpers deleted
 
-- `CollectionStatus` enum — deleted entirely.
 - `CollectionResult.isTradeDay()` — replaced by `instanceof CollectionResult.Collected`.
 - `MarketIndexCollectionResult.isTradeMonth()` — replaced by `instanceof MarketIndexCollectionResult.Collected`.
+- `CollectionStatus` enum — **retained** (used by the unrelated `CollectResult` pipeline-status type).
 
 ### Why this is the right trade
 
@@ -237,21 +239,23 @@ Each step is independently committable.
 
 ## Files Touched (summary)
 
-**Created/rewritten (3):**
+**Rewritten in place (3):**
 - `eagleeye-collector/src/main/java/com/eagleeye/collector/service/CollectionResult.java`
 - `eagleeye-collector/src/main/java/com/eagleeye/collector/service/DateCollectionResult.java`
 - `eagleeye-collector/src/main/java/com/eagleeye/collector/service/MarketIndexCollectionResult.java`
 
-**Deleted (1):**
-- `eagleeye-collector/src/main/java/com/eagleeye/collector/service/CollectionStatus.java`
+**Retained unchanged:**
+- `eagleeye-collector/src/main/java/com/eagleeye/collector/service/CollectionStatus.java` (still used by `CollectResult`)
 
-**Edited (~11):**
+**Edited (production code, ~13):**
 - `eagleeye-collector/.../service/CollectionService.java`
 - `eagleeye-collector/.../service/InstitutionalFlowService.java`
 - `eagleeye-collector/.../service/MarginTransactionService.java`
 - `eagleeye-collector/.../service/MarketIndexService.java`
 - `eagleeye-collector/.../service/FuturesAhService.java`
 - `eagleeye-collector/.../runner/BackfillRunner.java`
+- `eagleeye-collector/.../runner/MarketIndexBackfillRunner.java`
+- `eagleeye-collector/.../runner/FuturesAhBackfillRunner.java`
 - `eagleeye-shell/.../commands/InstitutionalFlowCommands.java`
 - `eagleeye-shell/.../commands/MarginTransactionCommands.java`
 - `eagleeye-shell/.../commands/MarketIndexCommands.java`
@@ -259,4 +263,11 @@ Each step is independently committable.
 - `eagleeye-shell/.../formatter/TableFormatter.java`
 - `eagleeye-web/.../DashboardService.java`
 
-Test files that construct result objects will need the same factory→constructor rename. Tests stay otherwise untouched.
+**Edited (tests, ~7):**
+- `eagleeye-collector/.../service/CollectionServiceTest.java`
+- `eagleeye-collector/.../service/FuturesAhServiceTest.java`
+- `eagleeye-collector/.../service/InstitutionalFlowServiceTest.java`, `InstitutionalFlowServiceIT.java`
+- `eagleeye-collector/.../service/MarginTransactionServiceTest.java`, `MarginTransactionServiceIT.java`
+- `eagleeye-collector/.../service/MarketIndexServiceTest.java`
+
+Tests that construct result objects need the same factory→constructor rename. Tests that pattern-match on `CollectionStatus` need updating to type patterns. Test files unrelated to the three sealed types (e.g., `ScheduledCollectorTest`, which uses `CollectResult`) are not touched.
