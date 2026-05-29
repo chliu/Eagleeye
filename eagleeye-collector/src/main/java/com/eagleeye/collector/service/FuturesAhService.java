@@ -38,7 +38,7 @@ public class FuturesAhService {
                 log.info("No after-hours futures data for {}", date);
                 return DateCollectionResult.noData(date);
             }
-            List<PositionDto> dtos = taifexParser.parse(html, date);
+            List<PositionDto> dtos = taifexParser.parseAh(html, date);
             upsertAll(dtos, date);
             log.info("Collected {} after-hours futures positions for {}", dtos.size(), date);
             return DateCollectionResult.collected(date);

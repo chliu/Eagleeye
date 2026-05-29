@@ -36,7 +36,8 @@ import java.util.List;
 @ConditionalOnExpression(
     "!environment.containsProperty('backfill.from') && " +
     "!environment.containsProperty('combined.backfill.from') && " +
-    "!environment.containsProperty('market-index.backfill.from')"
+    "!environment.containsProperty('market-index.backfill.from') && " +
+    "!environment.containsProperty('futures-ah.backfill.from')"
 )
 public class DailyCollectionRunner implements ApplicationRunner {
 

@@ -1,5 +1,6 @@
 package com.eagleeye.shell.formatter;
 
+import com.eagleeye.domain.entity.FuturesAhPosition;
 import com.eagleeye.domain.entity.FuturesPosition;
 import com.eagleeye.domain.entity.InstitutionalFlow;
 import com.eagleeye.domain.entity.MarginTransaction;
@@ -246,29 +247,61 @@ public class TableFormatter {
     // -----------------------------------------------------------------------
 
     private String contract(Object p) {
-        if (p instanceof FuturesPosition f) return f.getContract();
-        if (p instanceof OptionsPosition o) return o.getContract();
+        if (p instanceof FuturesPosition f)   return f.getContract();
+        if (p instanceof FuturesAhPosition f) return f.getContract();
+        if (p instanceof OptionsPosition o)   return o.getContract();
         return "";
     }
 
     private String tradeDate(Object p) {
-        if (p instanceof FuturesPosition f) return f.getTradeDate().toString();
-        if (p instanceof OptionsPosition o) return o.getTradeDate().toString();
+        if (p instanceof FuturesPosition f)   return f.getTradeDate().toString();
+        if (p instanceof FuturesAhPosition f) return f.getTradeDate().toString();
+        if (p instanceof OptionsPosition o)   return o.getTradeDate().toString();
         return "";
     }
 
     private String trader(Object p) {
-        if (p instanceof FuturesPosition f) return f.getTraderType().name();
-        if (p instanceof OptionsPosition o) return o.getTraderType().name();
+        if (p instanceof FuturesPosition f)   return f.getTraderType().name();
+        if (p instanceof FuturesAhPosition f) return f.getTraderType().name();
+        if (p instanceof OptionsPosition o)   return o.getTraderType().name();
         return "";
     }
 
-    private Long tradingLong(Object p)  { return p instanceof FuturesPosition f ? f.getTradingLongVolume()  : ((OptionsPosition) p).getTradingLongVolume(); }
-    private Long tradingShort(Object p) { return p instanceof FuturesPosition f ? f.getTradingShortVolume() : ((OptionsPosition) p).getTradingShortVolume(); }
-    private Long tradingNet(Object p)   { return p instanceof FuturesPosition f ? f.getTradingNetVolume()   : ((OptionsPosition) p).getTradingNetVolume(); }
-    private Long oiLong(Object p)       { return p instanceof FuturesPosition f ? f.getOiLongVolume()       : ((OptionsPosition) p).getOiLongVolume(); }
-    private Long oiShort(Object p)      { return p instanceof FuturesPosition f ? f.getOiShortVolume()      : ((OptionsPosition) p).getOiShortVolume(); }
-    private Long oiNet(Object p)        { return p instanceof FuturesPosition f ? f.getOiNetVolume()        : ((OptionsPosition) p).getOiNetVolume(); }
+    private Long tradingLong(Object p) {
+        if (p instanceof FuturesPosition f)   return f.getTradingLongVolume();
+        if (p instanceof FuturesAhPosition f) return f.getTradingLongVolume();
+        return ((OptionsPosition) p).getTradingLongVolume();
+    }
+
+    private Long tradingShort(Object p) {
+        if (p instanceof FuturesPosition f)   return f.getTradingShortVolume();
+        if (p instanceof FuturesAhPosition f) return f.getTradingShortVolume();
+        return ((OptionsPosition) p).getTradingShortVolume();
+    }
+
+    private Long tradingNet(Object p) {
+        if (p instanceof FuturesPosition f)   return f.getTradingNetVolume();
+        if (p instanceof FuturesAhPosition f) return f.getTradingNetVolume();
+        return ((OptionsPosition) p).getTradingNetVolume();
+    }
+
+    private Long oiLong(Object p) {
+        if (p instanceof FuturesPosition f)   return f.getOiLongVolume();
+        if (p instanceof FuturesAhPosition f) return f.getOiLongVolume();
+        return ((OptionsPosition) p).getOiLongVolume();
+    }
+
+    private Long oiShort(Object p) {
+        if (p instanceof FuturesPosition f)   return f.getOiShortVolume();
+        if (p instanceof FuturesAhPosition f) return f.getOiShortVolume();
+        return ((OptionsPosition) p).getOiShortVolume();
+    }
+
+    private Long oiNet(Object p) {
+        if (p instanceof FuturesPosition f)   return f.getOiNetVolume();
+        if (p instanceof FuturesAhPosition f) return f.getOiNetVolume();
+        return ((OptionsPosition) p).getOiNetVolume();
+    }
 
     // -----------------------------------------------------------------------
     // Number formatting

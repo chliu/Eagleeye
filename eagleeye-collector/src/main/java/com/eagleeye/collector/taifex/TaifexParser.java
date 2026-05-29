@@ -56,6 +56,18 @@ public class TaifexParser {
     }
 
     public List<PositionDto> parse(String html, LocalDate tradeDate) {
+        return parseColumns(html, tradeDate, 12);
+    }
+
+    /**
+     * Parses the after-hours (夜盤) table, which has 6 data columns instead of 12.
+     * The AH table contains only trading data (long/short/net volume+value); OI is absent.
+     */
+    public List<PositionDto> parseAh(String html, LocalDate tradeDate) {
+        return parseColumns(html, tradeDate, 6);
+    }
+
+    private List<PositionDto> parseColumns(String html, LocalDate tradeDate, int numDataCols) {
         Document doc = Jsoup.parse(html);
         List<PositionDto> results = new ArrayList<>();
 
@@ -70,11 +82,9 @@ public class TaifexParser {
         for (int i = 0; i < rows.size(); i++) {
             Element row = rows.get(i);
 
-            // Find the contract code cell — must have rowspan=3 and match contract pattern
             String contract = findContractCode(row);
             if (contract == null) continue;
 
-            // Process this row (Dealer) + next 2 rows (Investment Trust, FINI)
             for (int offset = 0; offset < 3 && (i + offset) < rows.size(); offset++) {
                 Element traderRow = rows.get(i + offset);
 
@@ -93,24 +103,28 @@ public class TaifexParser {
                 }
 
                 long[] all = extractNumbers(traderRow.select("td"));
-                if (all.length < 12) {
-                    log.warn("Expected ≥12 numeric cells, got {} for {}/{} on {}",
-                            all.length, contract, traderType, tradeDate);
+                if (all.length < numDataCols) {
+                    log.warn("Expected ≥{} numeric cells, got {} for {}/{} on {}",
+                            numDataCols, all.length, contract, traderType, tradeDate);
                     continue;
                 }
 
-                // Always take the last 12 — the Dealer row has an extra leading SN number
-                long[] nums = Arrays.copyOfRange(all, all.length - 12, all.length);
+                // Take the last numDataCols — the Dealer row has an extra leading SN number
+                long[] nums = Arrays.copyOfRange(all, all.length - numDataCols, all.length);
 
-                results.add(new PositionDto(
-                        tradeDate, contract, traderType,
-                        nums[0],  nums[1],   // trading long  vol, val
-                        nums[2],  nums[3],   // trading short vol, val
-                        nums[4],  nums[5],   // trading net   vol, val
-                        nums[6],  nums[7],   // OI     long   vol, val
-                        nums[8],  nums[9],   // OI     short  vol, val
-                        nums[10], nums[11]   // OI     net    vol, val
-                ));
+                results.add(numDataCols == 12
+                        ? new PositionDto(tradeDate, contract, traderType,
+                                nums[0],  nums[1],   // trading long  vol, val
+                                nums[2],  nums[3],   // trading short vol, val
+                                nums[4],  nums[5],   // trading net   vol, val
+                                nums[6],  nums[7],   // OI     long   vol, val
+                                nums[8],  nums[9],   // OI     short  vol, val
+                                nums[10], nums[11])  // OI     net    vol, val
+                        : new PositionDto(tradeDate, contract, traderType,
+                                nums[0],  nums[1],   // trading long  vol, val
+                                nums[2],  nums[3],   // trading short vol, val
+                                nums[4],  nums[5],   // trading net   vol, val
+                                0L, 0L, 0L, 0L, 0L, 0L)); // OI not published for after-hours
             }
         }
 
