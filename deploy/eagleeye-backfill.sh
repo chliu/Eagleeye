@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
-# One-shot backfill runner — collects TAIEX market index + TAIFEX institutional data
-# Usage: eagleeye-backfill --from 2026-01-01 [--to 2026-03-18]
+# One-shot backfill runner
+# Usage:
+#   eagleeye-backfill --from 2026-01-01 [--to 2026-05-28]              # combined (all regular collectors)
+#   eagleeye-backfill --futures-ah --from 2026-01-01 [--to 2026-05-28] # after-hours futures only
 
 set -euo pipefail
 
 FROM=""
 TO=""
+FUTURES_AH=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --futures-ah) FUTURES_AH=true; shift ;;
         --from) FROM="$2"; shift 2 ;;
         --to)   TO="$2";   shift 2 ;;
         *) echo "Unknown argument: $1"; exit 1 ;;
@@ -16,7 +20,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$FROM" ]]; then
-    echo "Usage: eagleeye-backfill --from YYYY-MM-DD [--to YYYY-MM-DD]"
+    echo "Usage: eagleeye-backfill [--futures-ah] --from YYYY-MM-DD [--to YYYY-MM-DD]"
     exit 1
 fi
 
@@ -26,7 +30,14 @@ JAVA="java --enable-native-access=ALL-UNNAMED"
 JAR="/opt/eagleeye/collector/eagleeye-collector.jar"
 COMMON_ARGS="--spring.profiles.active=prod --logging.level.root=WARN --logging.level.com.eagleeye=INFO"
 
-echo "=== Backfilling $FROM → $TO ==="
-$JAVA -jar "$JAR" $COMMON_ARGS \
-    --combined.backfill.from="$FROM" \
-    --combined.backfill.to="$TO"
+if [[ "$FUTURES_AH" == true ]]; then
+    echo "=== After-hours futures backfill: $FROM → $TO ==="
+    $JAVA -jar "$JAR" $COMMON_ARGS \
+        --futures-ah.backfill.from="$FROM" \
+        --futures-ah.backfill.to="$TO"
+else
+    echo "=== Backfilling $FROM → $TO ==="
+    $JAVA -jar "$JAR" $COMMON_ARGS \
+        --combined.backfill.from="$FROM" \
+        --combined.backfill.to="$TO"
+fi
