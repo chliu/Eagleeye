@@ -43,9 +43,8 @@ class CollectionServiceTest {
 
         CollectionResult result = service.collectAll(DATE);
 
-        assertThat(result.status()).isEqualTo(CollectionStatus.NO_DATA);
-        assertThat(result.futuresCount()).isZero();
-        assertThat(result.optionsCount()).isZero();
+        assertThat(result).isInstanceOf(CollectionResult.NoData.class);
+        assertThat(result.date()).isEqualTo(DATE);
     }
 
     @Test
@@ -72,9 +71,10 @@ class CollectionServiceTest {
 
         CollectionResult result = service.collectAll(DATE);
 
-        assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
-        assertThat(result.futuresCount()).isEqualTo(2);
-        assertThat(result.optionsCount()).isEqualTo(3);
+        assertThat(result).isInstanceOf(CollectionResult.Collected.class);
+        CollectionResult.Collected collected = (CollectionResult.Collected) result;
+        assertThat(collected.futuresCount()).isEqualTo(2);
+        assertThat(collected.optionsCount()).isEqualTo(3);
     }
 
     @Test
@@ -83,8 +83,9 @@ class CollectionServiceTest {
 
         CollectionResult result = service.collectAll(DATE);
 
-        assertThat(result.status()).isEqualTo(CollectionStatus.ERROR);
-        assertThat(result.errorMessage()).contains("connection refused");
+        assertThat(result).isInstanceOf(CollectionResult.Error.class);
+        CollectionResult.Error error = (CollectionResult.Error) result;
+        assertThat(error.message()).contains("connection refused");
     }
 
     // ── collectFutures ────────────────────────────────────────────────────────

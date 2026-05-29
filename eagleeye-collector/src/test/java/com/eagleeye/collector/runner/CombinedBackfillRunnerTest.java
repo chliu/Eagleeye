@@ -194,7 +194,7 @@ class CombinedBackfillRunnerTest {
 
     private void stubTaifex() {
         when(collectionService.collectAll(any(LocalDate.class)))
-                .thenReturn(CollectionResult.collected(LocalDate.now(), 10, 10));
+                .thenReturn(new CollectionResult.Collected(LocalDate.now(), 10, 10));
     }
 
     private void stubMargin() {

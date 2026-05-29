@@ -2,7 +2,6 @@ package com.eagleeye.collector.runner;
 
 import com.eagleeye.collector.service.CollectionResult;
 import com.eagleeye.collector.service.CollectionService;
-import com.eagleeye.collector.service.CollectionStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -73,12 +72,12 @@ public class BackfillRunner implements ApplicationRunner {
             CollectionResult result = collectionService.collectAll(current);
             results.add(result);
 
-            switch (result.status()) {
-                case COLLECTED -> printRow(current, "OK",
-                        result.futuresCount() + " rows",
-                        result.optionsCount() + " rows");
-                case NO_DATA   -> printRow(current, "HOLIDAY", "-", "-");
-                case ERROR     -> printRow(current, "ERROR", result.errorMessage(), "");
+            switch (result) {
+                case CollectionResult.Collected c -> printRow(current, "OK",
+                        c.futuresCount() + " rows",
+                        c.optionsCount() + " rows");
+                case CollectionResult.NoData n    -> printRow(current, "HOLIDAY", "-", "-");
+                case CollectionResult.Error e     -> printRow(current, "ERROR", e.message(), "");
             }
 
             Thread.sleep(REQUEST_DELAY_MS);
@@ -95,11 +94,15 @@ public class BackfillRunner implements ApplicationRunner {
     }
 
     private void printSummary(LocalDate from, LocalDate to, List<CollectionResult> results) {
-        long tradeDays  = results.stream().filter(CollectionResult::isTradeDay).count();
-        long holidays   = results.stream().filter(r -> r.status() == CollectionStatus.NO_DATA).count();
-        long errors     = results.stream().filter(r -> r.status() == CollectionStatus.ERROR).count();
-        long totalFut   = results.stream().mapToLong(CollectionResult::futuresCount).sum();
-        long totalOpt   = results.stream().mapToLong(CollectionResult::optionsCount).sum();
+        long tradeDays = results.stream().filter(CollectionResult.Collected.class::isInstance).count();
+        long holidays  = results.stream().filter(CollectionResult.NoData.class::isInstance).count();
+        long errors    = results.stream().filter(CollectionResult.Error.class::isInstance).count();
+        long totalFut  = results.stream()
+                .mapToLong(r -> r instanceof CollectionResult.Collected c ? c.futuresCount() : 0L)
+                .sum();
+        long totalOpt  = results.stream()
+                .mapToLong(r -> r instanceof CollectionResult.Collected c ? c.optionsCount() : 0L)
+                .sum();
 
         System.out.printf("""
 

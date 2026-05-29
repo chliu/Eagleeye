@@ -138,10 +138,10 @@ public class CombinedBackfillRunner implements ApplicationRunner {
     }
 
     private void printTaifex(LocalDate date, CollectionResult r) {
-        String status = switch (r.status()) {
-            case COLLECTED -> String.format("futures: %d  options: %d", r.futuresCount(), r.optionsCount());
-            case NO_DATA   -> "holiday";
-            case ERROR     -> "ERROR: " + r.errorMessage();
+        String status = switch (r) {
+            case CollectionResult.Collected c -> String.format("futures: %d  options: %d", c.futuresCount(), c.optionsCount());
+            case CollectionResult.NoData n    -> "holiday";
+            case CollectionResult.Error e     -> "ERROR: " + e.message();
         };
         System.out.printf("  [TAIFEX]  %-12s  %s%n", date, status);
     }

@@ -114,7 +114,7 @@ class ScheduledCollectorTest {
     @Test
     void taifex_collected_returnsFuturesAndOptionsCount() {
         when(collectionService.collectAll(DATE))
-                .thenReturn(CollectionResult.collected(DATE, 9, 12));
+                .thenReturn(new CollectionResult.Collected(DATE, 9, 12));
 
         CollectResult result = new TaifexOiCollector(collectionService).collect(DATE);
 
@@ -125,7 +125,7 @@ class ScheduledCollectorTest {
     @Test
     void taifex_noData_returnsNoData() {
         when(collectionService.collectAll(DATE))
-                .thenReturn(CollectionResult.noData(DATE));
+                .thenReturn(new CollectionResult.NoData(DATE));
 
         assertThat(new TaifexOiCollector(collectionService).collect(DATE).status())
                 .isEqualTo(CollectionStatus.NO_DATA);
@@ -134,7 +134,7 @@ class ScheduledCollectorTest {
     @Test
     void taifex_error_returnsError() {
         when(collectionService.collectAll(DATE))
-                .thenReturn(CollectionResult.error(DATE, "parse failed"));
+                .thenReturn(new CollectionResult.Error(DATE, "parse failed"));
 
         CollectResult result = new TaifexOiCollector(collectionService).collect(DATE);
 

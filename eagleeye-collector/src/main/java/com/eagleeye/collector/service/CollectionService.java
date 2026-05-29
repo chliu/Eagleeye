@@ -45,7 +45,7 @@ public class CollectionService {
 
             if (taifexParser.isNoDataPage(futuresHtml)) {
                 log.info("No trading data for {} — skipping", date);
-                return CollectionResult.noData(date);
+                return new CollectionResult.NoData(date);
             }
 
             int futures = processFutures(futuresHtml, date);
@@ -54,11 +54,11 @@ public class CollectionService {
             int options = processOptions(optionsHtml, date);
 
             log.info("Collected {}: {} futures, {} options positions", date, futures, options);
-            return CollectionResult.collected(date, futures, options);
+            return new CollectionResult.Collected(date, futures, options);
 
         } catch (Exception e) {
             log.error("Collection failed for {}: {}", date, e.getMessage(), e);
-            return CollectionResult.error(date, e.getMessage());
+            return new CollectionResult.Error(date, e.getMessage());
         }
     }
 
