@@ -9,9 +9,10 @@ import java.time.format.DateTimeFormatter;
 @Component
 public class TaifexClient {
 
-    private static final String BASE_URL = "https://www.taifex.com.tw";
-    private static final String FUTURES_PATH = "/enl/eng3/futContractsDate";
-    private static final String OPTIONS_PATH = "/enl/eng3/optContractsDate";
+    private static final String BASE_URL        = "https://www.taifex.com.tw";
+    private static final String FUTURES_PATH    = "/enl/eng3/futContractsDate";
+    private static final String FUTURES_AH_PATH = "/enl/eng3/futContractsDateAh";
+    private static final String OPTIONS_PATH    = "/enl/eng3/optContractsDate";
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
     private final RestClient restClient;
@@ -25,6 +26,10 @@ public class TaifexClient {
 
     public String fetchFuturesHtml(LocalDate date) {
         return fetch(FUTURES_PATH, date);
+    }
+
+    public String fetchFuturesAhHtml(LocalDate date) {
+        return fetch(FUTURES_AH_PATH, date);
     }
 
     public String fetchOptionsHtml(LocalDate date) {
