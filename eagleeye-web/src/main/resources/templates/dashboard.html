@@ -240,7 +240,7 @@ function taiexDs() {
   };
 }
 
-function opts(yFmt) {
+function opts(yFmt, yTooltipFmt) {
   return {
     responsive: true,
     maintainAspectRatio: true,
@@ -257,7 +257,16 @@ function opts(yFmt) {
         titleColor: '#e0e0e0',
         bodyColor: '#aaa',
         titleFont: { family: "'JetBrains Mono', monospace", size: 11 },
-        bodyFont:  { family: "'JetBrains Mono', monospace", size: 11 }
+        bodyFont:  { family: "'JetBrains Mono', monospace", size: 11 },
+        callbacks: yTooltipFmt ? {
+          label: ctx => {
+            const v = ctx.parsed.y;
+            if (ctx.dataset.yAxisID === 'y2') {
+              return ctx.dataset.label + ': ' + (v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v);
+            }
+            return ctx.dataset.label + ': ' + yTooltipFmt(v);
+          }
+        } : {}
       }
     },
     scales: {
@@ -320,7 +329,7 @@ new Chart(document.getElementById('marginChart'), {
       taiexDs()
     ]
   },
-  options: opts(fmtYi100k)
+  options: opts(fmtYi100k, fmtYi100k)
 });
 
 const RED_POS = RED, RED_NEG = RED_DIM, GREEN_POS = GREEN, GREEN_NEG = GRN_DIM;
