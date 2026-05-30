@@ -37,14 +37,14 @@ public class InstitutionalFlowService {
             InstitutionalFlow parsed = parser.parse(json, date);
             if (parsed == null) {
                 log.info("No institutional flow data for {}", date);
-                return DateCollectionResult.noData(date);
+                return new DateCollectionResult.NoData(date);
             }
             upsert(parsed);
             log.info("Collected institutional flow data for {}", date);
-            return DateCollectionResult.collected(date);
+            return new DateCollectionResult.Collected(date);
         } catch (Exception e) {
             log.error("Institutional flow collection failed for {}: {}", date, e.getMessage(), e);
-            return DateCollectionResult.error(date, e.getMessage());
+            return new DateCollectionResult.Error(date, e.getMessage());
         }
     }
 

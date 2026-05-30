@@ -1,5 +1,6 @@
 package com.eagleeye.collector.collector;
 
+import com.eagleeye.collector.service.DateCollectionResult;
 import com.eagleeye.collector.service.FuturesAhService;
 import org.springframework.stereotype.Component;
 
@@ -23,10 +24,10 @@ public class FuturesAhCollector implements ScheduledCollector {
     @Override
     public CollectResult collect(LocalDate date) {
         var result = service.collectDate(date);
-        return switch (result.status()) {
-            case COLLECTED -> CollectResult.collected("ok");
-            case NO_DATA   -> CollectResult.noData();
-            case ERROR     -> CollectResult.error(result.errorMessage());
+        return switch (result) {
+            case DateCollectionResult.Collected c -> CollectResult.collected("ok");
+            case DateCollectionResult.NoData n    -> CollectResult.noData();
+            case DateCollectionResult.Error e     -> CollectResult.error(e.message());
         };
     }
 }

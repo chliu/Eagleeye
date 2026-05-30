@@ -39,7 +39,7 @@ public class MarketIndexService {
 
             if (bars.isEmpty()) {
                 log.info("No TAIEX data for {} — skipping", yearMonth);
-                return MarketIndexCollectionResult.noData(yearMonth);
+                return new MarketIndexCollectionResult.NoData(yearMonth);
             }
 
             String statsJson = twseClient.fetchMarketStatsJson(yearMonth);
@@ -57,11 +57,11 @@ public class MarketIndexService {
                 if (upsert(bar)) inserted++; else updated++;
             }
             log.info("TAIEX bars for {}: {} inserted, {} updated", yearMonth, inserted, updated);
-            return MarketIndexCollectionResult.collected(yearMonth, bars.size());
+            return new MarketIndexCollectionResult.Collected(yearMonth, bars.size());
 
         } catch (Exception e) {
             log.error("TAIEX collection failed for {}: {}", yearMonth, e.getMessage(), e);
-            return MarketIndexCollectionResult.error(yearMonth, e.getMessage());
+            return new MarketIndexCollectionResult.Error(yearMonth, e.getMessage());
         }
     }
 

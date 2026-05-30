@@ -38,7 +38,7 @@ class FuturesAhServiceTest {
 
         DateCollectionResult result = service.collectDate(DATE);
 
-        assertThat(result.status()).isEqualTo(CollectionStatus.NO_DATA);
+        assertThat(result).isInstanceOf(DateCollectionResult.NoData.class);
         assertThat(result.tradeDate()).isEqualTo(DATE);
         verifyNoInteractions(repository);
     }
@@ -58,7 +58,7 @@ class FuturesAhServiceTest {
 
         DateCollectionResult result = service.collectDate(DATE);
 
-        assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
+        assertThat(result).isInstanceOf(DateCollectionResult.Collected.class);
         assertThat(result.tradeDate()).isEqualTo(DATE);
         verify(repository, times(3)).save(any());
     }
@@ -69,8 +69,9 @@ class FuturesAhServiceTest {
 
         DateCollectionResult result = service.collectDate(DATE);
 
-        assertThat(result.status()).isEqualTo(CollectionStatus.ERROR);
-        assertThat(result.errorMessage()).contains("timeout");
+        assertThat(result).isInstanceOf(DateCollectionResult.Error.class);
+        DateCollectionResult.Error error = (DateCollectionResult.Error) result;
+        assertThat(error.message()).contains("timeout");
         verifyNoInteractions(repository);
     }
 

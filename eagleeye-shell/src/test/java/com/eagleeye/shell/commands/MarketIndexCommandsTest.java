@@ -118,7 +118,7 @@ class MarketIndexCommandsTest {
     @Test
     void collect_defaultsToToday() {
         when(marketIndexService.collectMonthContaining(any()))
-                .thenReturn(MarketIndexCollectionResult.collected(YearMonth.now(), 20));
+                .thenReturn(new MarketIndexCollectionResult.Collected(YearMonth.now(), 20));
 
         commands.collect("");
 

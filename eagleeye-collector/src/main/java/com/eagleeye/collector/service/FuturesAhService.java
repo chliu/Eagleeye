@@ -36,15 +36,15 @@ public class FuturesAhService {
             String html = taifexClient.fetchFuturesAhHtml(date);
             if (taifexParser.isNoDataPage(html)) {
                 log.info("No after-hours futures data for {}", date);
-                return DateCollectionResult.noData(date);
+                return new DateCollectionResult.NoData(date);
             }
             List<PositionDto> dtos = taifexParser.parseAh(html, date);
             upsertAll(dtos, date);
             log.info("Collected {} after-hours futures positions for {}", dtos.size(), date);
-            return DateCollectionResult.collected(date);
+            return new DateCollectionResult.Collected(date);
         } catch (Exception e) {
             log.error("After-hours futures collection failed for {}: {}", date, e.getMessage(), e);
-            return DateCollectionResult.error(date, e.getMessage());
+            return new DateCollectionResult.Error(date, e.getMessage());
         }
     }
 

@@ -1,6 +1,5 @@
 package com.eagleeye.collector.runner;
 
-import com.eagleeye.collector.service.CollectionStatus;
 import com.eagleeye.collector.service.MarketIndexCollectionResult;
 import com.eagleeye.collector.service.MarketIndexService;
 import org.slf4j.Logger;
@@ -75,17 +74,21 @@ public class MarketIndexBackfillRunner implements ApplicationRunner {
     }
 
     private void printRow(MarketIndexCollectionResult result) {
-        System.out.printf("  %-8s  %-8s  bars: %d%n",
-                result.yearMonth(),
-                result.status(),
-                result.barsCount());
+        String label = switch (result) {
+            case MarketIndexCollectionResult.Collected c -> "OK     bars: " + c.barsCount();
+            case MarketIndexCollectionResult.NoData n    -> "NODATA bars: 0";
+            case MarketIndexCollectionResult.Error e     -> "ERROR  " + e.message();
+        };
+        System.out.printf("  %-8s  %s%n", result.yearMonth(), label);
     }
 
     private void printSummary(YearMonth from, YearMonth to, List<MarketIndexCollectionResult> results) {
-        long collected = results.stream().filter(MarketIndexCollectionResult::isTradeMonth).count();
-        long noData    = results.stream().filter(r -> r.status() == CollectionStatus.NO_DATA).count();
-        long errors    = results.stream().filter(r -> r.status() == CollectionStatus.ERROR).count();
-        long totalBars = results.stream().mapToLong(MarketIndexCollectionResult::barsCount).sum();
+        long collected = results.stream().filter(MarketIndexCollectionResult.Collected.class::isInstance).count();
+        long noData    = results.stream().filter(MarketIndexCollectionResult.NoData.class::isInstance).count();
+        long errors    = results.stream().filter(MarketIndexCollectionResult.Error.class::isInstance).count();
+        long totalBars = results.stream()
+                .mapToLong(r -> r instanceof MarketIndexCollectionResult.Collected c ? c.barsCount() : 0L)
+                .sum();
 
         System.out.printf("""
 

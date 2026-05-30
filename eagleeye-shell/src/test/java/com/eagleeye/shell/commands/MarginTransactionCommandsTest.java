@@ -106,7 +106,7 @@ class MarginTransactionCommandsTest {
     @Test
     void collect_defaultsToToday() {
         when(marginTransactionService.collectDate(any()))
-                .thenReturn(DateCollectionResult.collected(LocalDate.now()));
+                .thenReturn(new DateCollectionResult.Collected(LocalDate.now()));
 
         commands.collect("");
 

@@ -82,10 +82,10 @@ public class MarketIndexCommands {
     }
 
     private String formatResult(MarketIndexCollectionResult r) {
-        return switch (r.status()) {
-            case COLLECTED -> r.yearMonth() + " \u2014 bars: " + r.barsCount();
-            case NO_DATA   -> r.yearMonth() + " \u2014 no data";
-            case ERROR     -> r.yearMonth() + " \u2014 ERROR: " + r.errorMessage();
+        return switch (r) {
+            case MarketIndexCollectionResult.Collected c -> c.yearMonth() + " \u2014 bars: " + c.barsCount();
+            case MarketIndexCollectionResult.NoData n    -> n.yearMonth() + " \u2014 no data";
+            case MarketIndexCollectionResult.Error e     -> e.yearMonth() + " \u2014 ERROR: " + e.message();
         };
     }
 }

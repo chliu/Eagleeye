@@ -35,7 +35,7 @@ class ScheduledCollectorTest {
     @Test
     void marketIndex_collected_returnsBarCount() {
         when(marketIndexService.collectMonth(YearMonth.from(DATE)))
-                .thenReturn(MarketIndexCollectionResult.collected(YearMonth.from(DATE), 18));
+                .thenReturn(new MarketIndexCollectionResult.Collected(YearMonth.from(DATE), 18));
 
         CollectResult result = new MarketIndexCollector(marketIndexService).collect(DATE);
 
@@ -46,7 +46,7 @@ class ScheduledCollectorTest {
     @Test
     void marketIndex_noData_returnsNoData() {
         when(marketIndexService.collectMonth(any()))
-                .thenReturn(MarketIndexCollectionResult.noData(YearMonth.from(DATE)));
+                .thenReturn(new MarketIndexCollectionResult.NoData(YearMonth.from(DATE)));
 
         CollectResult result = new MarketIndexCollector(marketIndexService).collect(DATE);
 
@@ -56,7 +56,7 @@ class ScheduledCollectorTest {
     @Test
     void marketIndex_error_returnsError() {
         when(marketIndexService.collectMonth(any()))
-                .thenReturn(MarketIndexCollectionResult.error(YearMonth.from(DATE), "timeout"));
+                .thenReturn(new MarketIndexCollectionResult.Error(YearMonth.from(DATE), "timeout"));
 
         CollectResult result = new MarketIndexCollector(marketIndexService).collect(DATE);
 
@@ -75,7 +75,7 @@ class ScheduledCollectorTest {
     @Test
     void iflow_collected_returnsOk() {
         when(institutionalFlowService.collectDate(DATE))
-                .thenReturn(DateCollectionResult.collected(DATE));
+                .thenReturn(new DateCollectionResult.Collected(DATE));
 
         CollectResult result = new InstitutionalFlowCollector(institutionalFlowService).collect(DATE);
 
@@ -86,7 +86,7 @@ class ScheduledCollectorTest {
     @Test
     void iflow_noData_returnsNoData() {
         when(institutionalFlowService.collectDate(DATE))
-                .thenReturn(DateCollectionResult.noData(DATE));
+                .thenReturn(new DateCollectionResult.NoData(DATE));
 
         assertThat(new InstitutionalFlowCollector(institutionalFlowService).collect(DATE).status())
                 .isEqualTo(CollectionStatus.NO_DATA);
@@ -95,7 +95,7 @@ class ScheduledCollectorTest {
     @Test
     void iflow_error_returnsError() {
         when(institutionalFlowService.collectDate(DATE))
-                .thenReturn(DateCollectionResult.error(DATE, "connection refused"));
+                .thenReturn(new DateCollectionResult.Error(DATE, "connection refused"));
 
         CollectResult result = new InstitutionalFlowCollector(institutionalFlowService).collect(DATE);
 
@@ -153,7 +153,7 @@ class ScheduledCollectorTest {
     @Test
     void margin_collected_returnsOk() {
         when(marginTransactionService.collectDate(DATE))
-                .thenReturn(DateCollectionResult.collected(DATE));
+                .thenReturn(new DateCollectionResult.Collected(DATE));
 
         CollectResult result = new MarginCollector(marginTransactionService).collect(DATE);
 
@@ -164,7 +164,7 @@ class ScheduledCollectorTest {
     @Test
     void margin_noData_returnsNoData() {
         when(marginTransactionService.collectDate(DATE))
-                .thenReturn(DateCollectionResult.noData(DATE));
+                .thenReturn(new DateCollectionResult.NoData(DATE));
 
         assertThat(new MarginCollector(marginTransactionService).collect(DATE).status())
                 .isEqualTo(CollectionStatus.NO_DATA);
@@ -173,7 +173,7 @@ class ScheduledCollectorTest {
     @Test
     void margin_error_returnsError() {
         when(marginTransactionService.collectDate(DATE))
-                .thenReturn(DateCollectionResult.error(DATE, "HTTP 503"));
+                .thenReturn(new DateCollectionResult.Error(DATE, "HTTP 503"));
 
         CollectResult result = new MarginCollector(marginTransactionService).collect(DATE);
 

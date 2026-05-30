@@ -1,24 +1,19 @@
 package com.eagleeye.collector.service;
 
 import java.time.YearMonth;
+import java.util.Objects;
 
-public record MarketIndexCollectionResult(
-        YearMonth yearMonth,
-        int barsCount,
-        CollectionStatus status,
-        String errorMessage
-) {
-    public static MarketIndexCollectionResult collected(YearMonth yearMonth, int barsCount) {
-        return new MarketIndexCollectionResult(yearMonth, barsCount, CollectionStatus.COLLECTED, null);
+public sealed interface MarketIndexCollectionResult {
+
+    YearMonth yearMonth();
+
+    record Collected(YearMonth yearMonth, int barsCount) implements MarketIndexCollectionResult {}
+
+    record NoData(YearMonth yearMonth) implements MarketIndexCollectionResult {}
+
+    record Error(YearMonth yearMonth, String message) implements MarketIndexCollectionResult {
+        public Error {
+            Objects.requireNonNull(message, "message");
+        }
     }
-
-    public static MarketIndexCollectionResult noData(YearMonth yearMonth) {
-        return new MarketIndexCollectionResult(yearMonth, 0, CollectionStatus.NO_DATA, null);
-    }
-
-    public static MarketIndexCollectionResult error(YearMonth yearMonth, String message) {
-        return new MarketIndexCollectionResult(yearMonth, 0, CollectionStatus.ERROR, message);
-    }
-
-    public boolean isTradeMonth() { return status == CollectionStatus.COLLECTED; }
 }

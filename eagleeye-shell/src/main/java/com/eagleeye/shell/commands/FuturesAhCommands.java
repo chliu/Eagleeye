@@ -23,10 +23,10 @@ public class FuturesAhCommands {
             @Option(longName = "date", description = "Attributed trade date YYYY-MM-DD (default: today)", defaultValue = "") String date) {
         LocalDate d = (date == null || date.isEmpty()) ? LocalDate.now() : LocalDate.parse(date);
         var result = service.collectDate(d);
-        return switch (result.status()) {
-            case COLLECTED -> d + " — after-hours futures collected";
-            case NO_DATA   -> d + " — no data";
-            case ERROR     -> d + " — ERROR: " + result.errorMessage();
+        return switch (result) {
+            case com.eagleeye.collector.service.DateCollectionResult.Collected c -> c.tradeDate() + " — after-hours futures collected";
+            case com.eagleeye.collector.service.DateCollectionResult.NoData n    -> n.tradeDate() + " — no data";
+            case com.eagleeye.collector.service.DateCollectionResult.Error e     -> e.tradeDate() + " — ERROR: " + e.message();
         };
     }
 

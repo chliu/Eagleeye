@@ -72,9 +72,10 @@ class MarketIndexServiceTest {
 
         MarketIndexCollectionResult result = service.collectMonth(MARCH_2026);
 
-        assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
-        assertThat(result.barsCount()).isEqualTo(1);
-        assertThat(result.yearMonth()).isEqualTo(MARCH_2026);
+        assertThat(result).isInstanceOf(MarketIndexCollectionResult.Collected.class);
+        MarketIndexCollectionResult.Collected collected = (MarketIndexCollectionResult.Collected) result;
+        assertThat(collected.barsCount()).isEqualTo(1);
+        assertThat(collected.yearMonth()).isEqualTo(MARCH_2026);
         verify(repository, times(1)).save(any(TaiexIndex.class));
     }
 
@@ -84,8 +85,8 @@ class MarketIndexServiceTest {
 
         MarketIndexCollectionResult result = service.collectMonth(MARCH_2026);
 
-        assertThat(result.status()).isEqualTo(CollectionStatus.NO_DATA);
-        assertThat(result.barsCount()).isEqualTo(0);
+        assertThat(result).isInstanceOf(MarketIndexCollectionResult.NoData.class);
+        assertThat(result.yearMonth()).isEqualTo(MARCH_2026);
         verify(repository, never()).save(any());
     }
 
@@ -95,8 +96,9 @@ class MarketIndexServiceTest {
 
         MarketIndexCollectionResult result = service.collectMonth(MARCH_2026);
 
-        assertThat(result.status()).isEqualTo(CollectionStatus.ERROR);
-        assertThat(result.errorMessage()).contains("connection timeout");
+        assertThat(result).isInstanceOf(MarketIndexCollectionResult.Error.class);
+        MarketIndexCollectionResult.Error error = (MarketIndexCollectionResult.Error) result;
+        assertThat(error.message()).contains("connection timeout");
         verify(repository, never()).save(any());
     }
 
@@ -109,7 +111,7 @@ class MarketIndexServiceTest {
         MarketIndexCollectionResult result = service.collectMonthContaining(LocalDate.of(2026, 3, 15));
 
         assertThat(result.yearMonth()).isEqualTo(MARCH_2026);
-        assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
+        assertThat(result).isInstanceOf(MarketIndexCollectionResult.Collected.class);
         verify(twseClient, times(1)).fetchMonthJson(MARCH_2026);
     }
 

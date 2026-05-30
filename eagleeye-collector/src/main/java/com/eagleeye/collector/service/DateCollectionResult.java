@@ -1,21 +1,19 @@
 package com.eagleeye.collector.service;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
-public record DateCollectionResult(
-        LocalDate tradeDate,
-        CollectionStatus status,
-        String errorMessage
-) {
-    public static DateCollectionResult collected(LocalDate date) {
-        return new DateCollectionResult(date, CollectionStatus.COLLECTED, null);
-    }
+public sealed interface DateCollectionResult {
 
-    public static DateCollectionResult noData(LocalDate date) {
-        return new DateCollectionResult(date, CollectionStatus.NO_DATA, null);
-    }
+    LocalDate tradeDate();
 
-    public static DateCollectionResult error(LocalDate date, String message) {
-        return new DateCollectionResult(date, CollectionStatus.ERROR, message);
+    record Collected(LocalDate tradeDate) implements DateCollectionResult {}
+
+    record NoData(LocalDate tradeDate) implements DateCollectionResult {}
+
+    record Error(LocalDate tradeDate, String message) implements DateCollectionResult {
+        public Error {
+            Objects.requireNonNull(message, "message");
+        }
     }
 }

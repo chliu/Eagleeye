@@ -24,10 +24,10 @@ public class CollectCommands {
     }
 
     private String formatResult(CollectionResult r) {
-        return switch (r.status()) {
-            case COLLECTED -> r.date() + " \u2014 futures: " + r.futuresCount() + ", options: " + r.optionsCount();
-            case NO_DATA   -> r.date() + " \u2014 no data (holiday)";
-            case ERROR     -> r.date() + " \u2014 ERROR: " + r.errorMessage();
+        return switch (r) {
+            case CollectionResult.Collected c -> c.date() + " \u2014 futures: " + c.futuresCount() + ", options: " + c.optionsCount();
+            case CollectionResult.NoData n    -> n.date() + " \u2014 no data (holiday)";
+            case CollectionResult.Error e     -> e.date() + " \u2014 ERROR: " + e.message();
         };
     }
 }

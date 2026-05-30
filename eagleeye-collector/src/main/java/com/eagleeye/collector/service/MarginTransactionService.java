@@ -37,14 +37,14 @@ public class MarginTransactionService {
             MarginTransaction parsed = parser.parse(json, date);
             if (parsed == null) {
                 log.info("No margin data for {}", date);
-                return DateCollectionResult.noData(date);
+                return new DateCollectionResult.NoData(date);
             }
             upsert(parsed);
             log.info("Collected margin data for {}", date);
-            return DateCollectionResult.collected(date);
+            return new DateCollectionResult.Collected(date);
         } catch (Exception e) {
             log.error("Margin collection failed for {}: {}", date, e.getMessage(), e);
-            return DateCollectionResult.error(date, e.getMessage());
+            return new DateCollectionResult.Error(date, e.getMessage());
         }
     }
 

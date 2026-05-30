@@ -189,7 +189,7 @@ class CombinedBackfillRunnerTest {
 
     private void stubMarketIndex(YearMonth ym) {
         when(marketIndexService.collectMonth(ym))
-                .thenReturn(MarketIndexCollectionResult.collected(ym, 20));
+                .thenReturn(new MarketIndexCollectionResult.Collected(ym, 20));
     }
 
     private void stubTaifex() {
@@ -199,11 +199,11 @@ class CombinedBackfillRunnerTest {
 
     private void stubMargin() {
         when(marginTransactionService.collectDate(any(LocalDate.class)))
-                .thenReturn(DateCollectionResult.collected(LocalDate.now()));
+                .thenReturn(new DateCollectionResult.Collected(LocalDate.now()));
     }
 
     private void stubFlow() {
         when(institutionalFlowService.collectDate(any(LocalDate.class)))
-                .thenReturn(DateCollectionResult.collected(LocalDate.now()));
+                .thenReturn(new DateCollectionResult.Collected(LocalDate.now()));
     }
 }

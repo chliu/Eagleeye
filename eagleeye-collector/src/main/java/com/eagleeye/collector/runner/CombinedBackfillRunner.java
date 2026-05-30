@@ -129,10 +129,10 @@ public class CombinedBackfillRunner implements ApplicationRunner {
     }
 
     private void printMarketIndex(MarketIndexCollectionResult r) {
-        String status = switch (r.status()) {
-            case COLLECTED -> "bars: " + r.barsCount();
-            case NO_DATA   -> "no data";
-            case ERROR     -> "ERROR: " + r.errorMessage();
+        String status = switch (r) {
+            case MarketIndexCollectionResult.Collected c -> "bars: " + c.barsCount();
+            case MarketIndexCollectionResult.NoData n    -> "no data";
+            case MarketIndexCollectionResult.Error e     -> "ERROR: " + e.message();
         };
         System.out.printf("  [TAIEX]   %-8s  %s%n", r.yearMonth(), status);
     }
@@ -147,10 +147,10 @@ public class CombinedBackfillRunner implements ApplicationRunner {
     }
 
     private void printDateResult(String label, LocalDate date, DateCollectionResult r) {
-        String status = switch (r.status()) {
-            case COLLECTED -> "collected";
-            case NO_DATA   -> "no data";
-            case ERROR     -> "ERROR: " + r.errorMessage();
+        String status = switch (r) {
+            case DateCollectionResult.Collected c -> "collected";
+            case DateCollectionResult.NoData n    -> "no data";
+            case DateCollectionResult.Error e     -> "ERROR: " + e.message();
         };
         System.out.printf("  [%s]  %-12s  %s%n", label, date, status);
     }

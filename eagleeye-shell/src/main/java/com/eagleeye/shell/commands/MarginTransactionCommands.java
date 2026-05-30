@@ -79,10 +79,10 @@ public class MarginTransactionCommands {
     }
 
     private String formatResult(DateCollectionResult r) {
-        return switch (r.status()) {
-            case COLLECTED -> r.tradeDate() + " \u2014 collected";
-            case NO_DATA   -> r.tradeDate() + " \u2014 no data";
-            case ERROR     -> r.tradeDate() + " \u2014 ERROR: " + r.errorMessage();
+        return switch (r) {
+            case DateCollectionResult.Collected c -> c.tradeDate() + " \u2014 collected";
+            case DateCollectionResult.NoData n    -> n.tradeDate() + " \u2014 no data";
+            case DateCollectionResult.Error e     -> e.tradeDate() + " \u2014 ERROR: " + e.message();
         };
     }
 }

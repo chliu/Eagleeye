@@ -1,7 +1,6 @@
 package com.eagleeye.collector.service;
 
 import com.eagleeye.collector.twse.TwseClient;
-import com.eagleeye.collector.service.CollectionStatus;
 import com.eagleeye.domain.entity.MarginTransaction;
 import com.eagleeye.domain.repository.MarginTransactionRepository;
 import org.junit.jupiter.api.Test;
@@ -64,7 +63,7 @@ class MarginTransactionServiceIT {
 
         DateCollectionResult result = service.collectDate(DATE);
 
-        assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
+        assertThat(result).isInstanceOf(DateCollectionResult.Collected.class);
         assertThat(result.tradeDate()).isEqualTo(DATE);
 
         MarginTransaction saved = repository.findByTradeDate(DATE).orElseThrow();
@@ -118,7 +117,7 @@ class MarginTransactionServiceIT {
 
         DateCollectionResult result = service.collectDate(DATE);
 
-        assertThat(result.status()).isEqualTo(CollectionStatus.NO_DATA);
+        assertThat(result).isInstanceOf(DateCollectionResult.NoData.class);
         assertThat(repository.findByTradeDate(DATE)).isEmpty();
     }
 
@@ -130,8 +129,9 @@ class MarginTransactionServiceIT {
 
         DateCollectionResult result = service.collectDate(DATE);
 
-        assertThat(result.status()).isEqualTo(CollectionStatus.ERROR);
-        assertThat(result.errorMessage()).contains("connection timeout");
+        assertThat(result).isInstanceOf(DateCollectionResult.Error.class);
+        DateCollectionResult.Error error = (DateCollectionResult.Error) result;
+        assertThat(error.message()).contains("connection timeout");
         assertThat(repository.findByTradeDate(DATE)).isEmpty();
     }
 }

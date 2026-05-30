@@ -1,6 +1,5 @@
 package com.eagleeye.collector.runner;
 
-import com.eagleeye.collector.service.CollectionStatus;
 import com.eagleeye.collector.service.DateCollectionResult;
 import com.eagleeye.collector.service.FuturesAhService;
 import org.slf4j.Logger;
@@ -80,18 +79,18 @@ public class FuturesAhBackfillRunner implements ApplicationRunner {
     }
 
     private void printRow(LocalDate date, DateCollectionResult r) {
-        String status = switch (r.status()) {
-            case COLLECTED -> "ok";
-            case NO_DATA   -> "no data";
-            case ERROR     -> "ERROR: " + r.errorMessage();
+        String status = switch (r) {
+            case DateCollectionResult.Collected c -> "ok";
+            case DateCollectionResult.NoData n    -> "no data";
+            case DateCollectionResult.Error e     -> "ERROR: " + e.message();
         };
         System.out.printf("  [FUTAH]  %-12s  %s%n", date, status);
     }
 
     private void printSummary(LocalDate from, LocalDate to, List<DateCollectionResult> results) {
-        long collected = results.stream().filter(r -> r.status() == CollectionStatus.COLLECTED).count();
-        long noData    = results.stream().filter(r -> r.status() == CollectionStatus.NO_DATA).count();
-        long errors    = results.stream().filter(r -> r.status() == CollectionStatus.ERROR).count();
+        long collected = results.stream().filter(DateCollectionResult.Collected.class::isInstance).count();
+        long noData    = results.stream().filter(DateCollectionResult.NoData.class::isInstance).count();
+        long errors    = results.stream().filter(DateCollectionResult.Error.class::isInstance).count();
 
         System.out.printf("""
 

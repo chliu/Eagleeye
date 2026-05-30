@@ -45,7 +45,7 @@ class InstitutionalFlowServiceTest {
 
         DateCollectionResult result = service.collectDate(DATE);
 
-        assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
+        assertThat(result).isInstanceOf(DateCollectionResult.Collected.class);
         assertThat(result.tradeDate()).isEqualTo(DATE);
         verify(repository).save(any(InstitutionalFlow.class));
     }
@@ -57,7 +57,7 @@ class InstitutionalFlowServiceTest {
 
         DateCollectionResult result = service.collectDate(DATE);
 
-        assertThat(result.status()).isEqualTo(CollectionStatus.NO_DATA);
+        assertThat(result).isInstanceOf(DateCollectionResult.NoData.class);
         verify(repository, never()).save(any());
     }
 
@@ -67,8 +67,9 @@ class InstitutionalFlowServiceTest {
 
         DateCollectionResult result = service.collectDate(DATE);
 
-        assertThat(result.status()).isEqualTo(CollectionStatus.ERROR);
-        assertThat(result.errorMessage()).contains("timeout");
+        assertThat(result).isInstanceOf(DateCollectionResult.Error.class);
+        DateCollectionResult.Error error = (DateCollectionResult.Error) result;
+        assertThat(error.message()).contains("timeout");
         verify(repository, never()).save(any());
     }
 

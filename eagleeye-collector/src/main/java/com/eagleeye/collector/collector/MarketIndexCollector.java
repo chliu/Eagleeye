@@ -1,5 +1,6 @@
 package com.eagleeye.collector.collector;
 
+import com.eagleeye.collector.service.MarketIndexCollectionResult;
 import com.eagleeye.collector.service.MarketIndexService;
 import org.springframework.stereotype.Component;
 
@@ -24,10 +25,10 @@ public class MarketIndexCollector implements ScheduledCollector {
     @Override
     public CollectResult collect(LocalDate date) {
         var result = service.collectMonth(YearMonth.from(date));
-        return switch (result.status()) {
-            case COLLECTED -> CollectResult.collected("bars: " + result.barsCount());
-            case NO_DATA   -> CollectResult.noData();
-            case ERROR     -> CollectResult.error(result.errorMessage());
+        return switch (result) {
+            case MarketIndexCollectionResult.Collected c -> CollectResult.collected("bars: " + c.barsCount());
+            case MarketIndexCollectionResult.NoData n    -> CollectResult.noData();
+            case MarketIndexCollectionResult.Error e     -> CollectResult.error(e.message());
         };
     }
 }
