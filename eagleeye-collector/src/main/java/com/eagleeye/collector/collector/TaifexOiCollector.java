@@ -4,12 +4,9 @@ import com.eagleeye.collector.service.CollectionService;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 
 @Component
 public class TaifexOiCollector implements ScheduledCollector {
-
-    private static final LocalTime SCHEDULED_AT = LocalTime.of(15, 30);
 
     private final CollectionService service;
 
@@ -17,7 +14,6 @@ public class TaifexOiCollector implements ScheduledCollector {
         this.service = service;
     }
 
-    @Override public LocalTime scheduledAt() { return SCHEDULED_AT; }
     @Override public String name() { return "TAIFEX"; }
 
     @Override

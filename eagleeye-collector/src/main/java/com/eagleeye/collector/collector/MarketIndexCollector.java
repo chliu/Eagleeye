@@ -5,13 +5,10 @@ import com.eagleeye.collector.service.MarketIndexService;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.YearMonth;
 
 @Component
 public class MarketIndexCollector implements ScheduledCollector {
-
-    private static final LocalTime SCHEDULED_AT = LocalTime.of(15, 5);
 
     private final MarketIndexService service;
 
@@ -19,7 +16,6 @@ public class MarketIndexCollector implements ScheduledCollector {
         this.service = service;
     }
 
-    @Override public LocalTime scheduledAt() { return SCHEDULED_AT; }
     @Override public String name() { return "TAIEX"; }
 
     @Override

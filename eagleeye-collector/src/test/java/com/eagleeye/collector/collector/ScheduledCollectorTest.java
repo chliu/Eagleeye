@@ -7,7 +7,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.YearMonth;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,12 +24,6 @@ class ScheduledCollectorTest {
     @Mock MarginTransactionService marginTransactionService;
 
     // ── MarketIndexCollector ──────────────────────────────────────────────────
-
-    @Test
-    void marketIndex_scheduledAt_15_05() {
-        assertThat(new MarketIndexCollector(marketIndexService).scheduledAt())
-                .isEqualTo(LocalTime.of(15, 5));
-    }
 
     @Test
     void marketIndex_collected_returnsBarCount() {
@@ -67,12 +60,6 @@ class ScheduledCollectorTest {
     // ── InstitutionalFlowCollector ────────────────────────────────────────────
 
     @Test
-    void iflow_scheduledAt_15_15() {
-        assertThat(new InstitutionalFlowCollector(institutionalFlowService).scheduledAt())
-                .isEqualTo(LocalTime.of(15, 15));
-    }
-
-    @Test
     void iflow_collected_returnsOk() {
         when(institutionalFlowService.collectDate(DATE))
                 .thenReturn(new DateCollectionResult.Collected(DATE));
@@ -106,12 +93,6 @@ class ScheduledCollectorTest {
     // ── TaifexOiCollector ─────────────────────────────────────────────────────
 
     @Test
-    void taifex_scheduledAt_15_30() {
-        assertThat(new TaifexOiCollector(collectionService).scheduledAt())
-                .isEqualTo(LocalTime.of(15, 30));
-    }
-
-    @Test
     void taifex_collected_returnsFuturesAndOptionsCount() {
         when(collectionService.collectAll(DATE))
                 .thenReturn(new FuturesOptionsCollectionResult.Collected(DATE, 9, 12));
@@ -143,12 +124,6 @@ class ScheduledCollectorTest {
     }
 
     // ── MarginCollector ───────────────────────────────────────────────────────
-
-    @Test
-    void margin_scheduledAt_21_35() {
-        assertThat(new MarginCollector(marginTransactionService).scheduledAt())
-                .isEqualTo(LocalTime.of(21, 35));
-    }
 
     @Test
     void margin_collected_returnsOk() {

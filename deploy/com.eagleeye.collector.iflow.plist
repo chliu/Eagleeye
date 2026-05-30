@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    IFLOW collector — institutional flow, TWSE 三大法人 published ~15:00
+    launchd StartCalendarInterval uses local time (Asia/Taipei), NOT UTC.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.eagleeye.collector.iflow</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/opt/openjdk@25/bin/java</string>
+        <string>--enable-native-access=ALL-UNNAMED</string>
+        <!-- Class Data Sharing: speeds startup ~18% for this short-lived process. -->
+        <string>-XX:+AutoCreateSharedArchive</string>
+        <string>-XX:SharedArchiveFile=/opt/eagleeye/collector/collector.jsa</string>
+        <string>-Xlog:cds=off</string>
+        <string>-jar</string>
+        <string>/opt/eagleeye/collector/eagleeye-collector.jar</string>
+        <string>--spring.profiles.active=prod</string>
+        <string>--logging.level.root=WARN</string>
+        <string>--logging.level.com.eagleeye=INFO</string>
+        <string>--collector=IFLOW</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>15</integer></dict>
+        <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>15</integer></dict>
+        <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>15</integer></dict>
+        <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>15</integer></dict>
+        <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>15</integer></dict>
+    </array>
+
+    <key>StandardOutPath</key>
+    <string>/opt/eagleeye/logs/collector-iflow.log</string>
+    <key>StandardErrorPath</key>
+    <string>/opt/eagleeye/logs/collector-iflow-error.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>JAVA_HOME</key>
+        <string>/usr/local/opt/openjdk@25</string>
+    </dict>
+</dict>
+</plist>

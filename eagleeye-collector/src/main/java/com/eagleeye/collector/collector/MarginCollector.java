@@ -5,12 +5,9 @@ import com.eagleeye.collector.service.MarginTransactionService;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 
 @Component
 public class MarginCollector implements ScheduledCollector {
-
-    private static final LocalTime SCHEDULED_AT = LocalTime.of(21, 35);
 
     private final MarginTransactionService service;
 
@@ -18,7 +15,6 @@ public class MarginCollector implements ScheduledCollector {
         this.service = service;
     }
 
-    @Override public LocalTime scheduledAt() { return SCHEDULED_AT; }
     @Override public String name() { return "MARGIN"; }
 
     @Override

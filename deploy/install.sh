@@ -10,11 +10,14 @@ SHELL_DIR="$INSTALL_DIR/shell"
 WEB_DIR="$INSTALL_DIR/web"
 LOG_DIR="$INSTALL_DIR/logs"
 DATA_DIR="$HOME/.eagleeye/data"
-PLIST_SRC="$(dirname "$0")/com.eagleeye.collector.plist"
-PLIST_DST="$HOME/Library/LaunchAgents/com.eagleeye.collector.plist"
+DEPLOY_DIR="$(cd "$(dirname "$0")" && pwd)"
+LAUNCH_AGENTS="$HOME/Library/LaunchAgents"
 BIN_LINK="/usr/local/bin/eagleeye"
 BACKFILL_LINK="/usr/local/bin/eagleeye-backfill"
 WEB_LINK="/usr/local/bin/eagleeye-web"
+
+# Collectors, each its own launchd job (name-addressed via --collector=NAME).
+COLLECTORS=(futah taiex iflow taifex margin)
 
 # ── 1. Build ──────────────────────────────────────────────────────────────────
 echo "==> Building JARs..."
@@ -66,12 +69,12 @@ sudo chmod +x "$BIN_LINK"
 
 # ── 5b. Backfill wrapper ──────────────────────────────────────────────────────
 echo "==> Installing backfill wrapper..."
-sudo cp "$(dirname "$0")/eagleeye-backfill.sh" "$BACKFILL_LINK"
+sudo cp "$DEPLOY_DIR/eagleeye-backfill.sh" "$BACKFILL_LINK"
 sudo chmod +x "$BACKFILL_LINK"
 
 # ── 5c. Web wrapper ───────────────────────────────────────────────────────────
 echo "==> Installing web wrapper..."
-sudo cp "$(dirname "$0")/eagleeye-web.sh" "$WEB_LINK"
+sudo cp "$DEPLOY_DIR/eagleeye-web.sh" "$WEB_LINK"
 sudo chmod +x "$WEB_LINK"
 
 # ── 5. Detect Java home for plist ─────────────────────────────────────────────
@@ -93,25 +96,42 @@ echo "==> Pre-generating collector CDS archive..."
   && echo "    archive: $COLLECTOR_DIR/collector.jsa" \
   || echo "    (skipped — archive will be created on first scheduled run)"
 
-# ── 6. Install launchd plist ──────────────────────────────────────────────────
-echo "==> Installing launchd agent..."
-sed "s|/usr/local/opt/openjdk@25|$JAVA_HOME_VAL|g" "$PLIST_SRC" > "$PLIST_DST"
+# ── 6. Install launchd agents (one per collector) ─────────────────────────────
+# Each collector is its own job: it owns its schedule and names which collector
+# to run via --collector=NAME. Adding a data source = a new plist here, nothing
+# else to change.
+echo "==> Installing launchd agents..."
+mkdir -p "$LAUNCH_AGENTS"
 
-# Reload if already loaded
-launchctl bootout "gui/$(id -u)/com.eagleeye.collector" 2>/dev/null || true
-launchctl bootstrap "gui/$(id -u)" "$PLIST_DST"
+for c in "${COLLECTORS[@]}"; do
+    label="com.eagleeye.collector.$c"
+    src="$DEPLOY_DIR/$label.plist"
+    dst="$LAUNCH_AGENTS/$label.plist"
+
+    if [[ ! -f "$src" ]]; then
+        echo "    WARN: missing $src — skipping" >&2
+        continue
+    fi
+
+    sed "s|/usr/local/opt/openjdk@25|$JAVA_HOME_VAL|g" "$src" > "$dst"
+
+    launchctl bootout "gui/$(id -u)/$label" 2>/dev/null || true
+    launchctl bootstrap "gui/$(id -u)" "$dst"
+    echo "    loaded $label"
+done
 
 echo ""
 echo "Done! EagleEye installed."
 echo ""
-echo "  Collector runs Mon–Fri (Taipei time):"
-echo "    07:00  after-hours futures (夜盤)"
-echo "    15:05  market index        (TWSE afterTrading FMTQIK)"
-echo "    15:15  institutional flow  (三大法人)"
-echo "    15:30  TAIFEX OI           (未平倉口數及契約金額)"
-echo "    21:35  margin transactions (融資融券)"
-echo "  Manual trigger:  launchctl start com.eagleeye.collector  # runs current time-window collector only"
-echo "  Logs:            tail -f $LOG_DIR/collector.log"
+echo "  Collectors run Mon–Fri (Taipei time), each its own launchd job:"
+echo "    07:00  FUTAH   after-hours futures (夜盤)"
+echo "    15:05  TAIEX   market index        (TWSE afterTrading FMTQIK)"
+echo "    15:15  IFLOW   institutional flow  (三大法人)"
+echo "    15:30  TAIFEX  TAIFEX OI           (未平倉口數及契約金額)"
+echo "    21:35  MARGIN  margin transactions (融資融券)"
+echo "  Manual trigger:  launchctl start com.eagleeye.collector.margin   # one collector"
+echo "  Ad-hoc run all:  eagleeye-collector --collector=ALL              # via the jar directly"
+echo "  Logs:            tail -f $LOG_DIR/collector-*.log"
 echo "  Shell:           eagleeye"
 echo "  Backfill all:    eagleeye-backfill --from 2026-01-01 --to 2026-05-28"
 echo "  Backfill 夜盤:   eagleeye-backfill --futures-ah --from 2026-01-01 --to 2026-05-28"

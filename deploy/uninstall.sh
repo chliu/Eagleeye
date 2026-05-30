@@ -2,15 +2,23 @@
 # EagleEye macOS uninstaller
 set -euo pipefail
 
-PLIST_DST="$HOME/Library/LaunchAgents/com.eagleeye.collector.plist"
+LAUNCH_AGENTS="$HOME/Library/LaunchAgents"
+COLLECTORS=(futah taiex iflow taifex margin)
 
-echo "==> Stopping and removing launchd agent..."
+echo "==> Stopping and removing launchd agents..."
+# Per-collector jobs (current layout)
+for c in "${COLLECTORS[@]}"; do
+    label="com.eagleeye.collector.$c"
+    launchctl bootout "gui/$(id -u)/$label" 2>/dev/null || true
+    rm -f "$LAUNCH_AGENTS/$label.plist"
+done
+# Legacy single job (pre-refactor), if still present
 launchctl bootout "gui/$(id -u)/com.eagleeye.collector" 2>/dev/null || true
-rm -f "$PLIST_DST"
+rm -f "$LAUNCH_AGENTS/com.eagleeye.collector.plist"
 
 echo "==> Removing binaries..."
 sudo rm -rf /opt/eagleeye
-sudo rm -f /usr/local/bin/eagleeye
+sudo rm -f /usr/local/bin/eagleeye /usr/local/bin/eagleeye-backfill /usr/local/bin/eagleeye-web
 
 echo ""
 echo "Uninstalled. Data at ~/.eagleeye is preserved."

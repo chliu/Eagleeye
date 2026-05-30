@@ -5,12 +5,9 @@ import com.eagleeye.collector.service.InstitutionalFlowService;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 
 @Component
 public class InstitutionalFlowCollector implements ScheduledCollector {
-
-    private static final LocalTime SCHEDULED_AT = LocalTime.of(15, 15);
 
     private final InstitutionalFlowService service;
 
@@ -18,7 +15,6 @@ public class InstitutionalFlowCollector implements ScheduledCollector {
         this.service = service;
     }
 
-    @Override public LocalTime scheduledAt() { return SCHEDULED_AT; }
     @Override public String name() { return "IFLOW"; }
 
     @Override
