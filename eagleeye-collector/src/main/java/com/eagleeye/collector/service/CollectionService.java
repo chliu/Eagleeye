@@ -3,6 +3,7 @@ package com.eagleeye.collector.service;
 import com.eagleeye.collector.taifex.TaifexClient;
 import com.eagleeye.collector.taifex.TaifexParser;
 import com.eagleeye.domain.dto.PositionDto;
+import com.eagleeye.domain.entity.AbstractMarketPosition;
 import com.eagleeye.domain.entity.FuturesPosition;
 import com.eagleeye.domain.entity.OptionsPosition;
 import com.eagleeye.domain.repository.FuturesPositionRepository;
@@ -39,6 +40,7 @@ public class CollectionService {
      * Collects futures + options for the given date.
      * Returns NO_DATA when TAIFEX has no records for that date (weekend / holiday).
      */
+    @Transactional
     public FuturesOptionsCollectionResult collectAll(LocalDate date) {
         try {
             String futuresHtml = taifexClient.fetchFuturesHtml(date);
@@ -92,7 +94,6 @@ public class CollectionService {
     // Internal helpers
     // -----------------------------------------------------------------------
 
-    @Transactional
     protected int processFutures(String html, LocalDate date) {
         List<PositionDto> dtos = taifexParser.parse(html, date);
         int inserted = 0, updated = 0;
@@ -103,7 +104,6 @@ public class CollectionService {
         return dtos.size();
     }
 
-    @Transactional
     protected int processOptions(String html, LocalDate date) {
         List<PositionDto> dtos = taifexParser.parse(html, date);
         int inserted = 0, updated = 0;
@@ -118,7 +118,7 @@ public class CollectionService {
     private boolean upsertFutures(PositionDto dto, LocalDate date) {
         var existing = futuresRepo.findByTradeDateAndContractAndTraderType(date, dto.contract(), dto.traderType());
         FuturesPosition pos = existing.orElseGet(() -> new FuturesPosition(date, dto.contract(), dto.traderType()));
-        applyToFutures(pos, dto);
+        applyDto(pos, dto);
         futuresRepo.save(pos);
         return existing.isEmpty();
     }
@@ -127,27 +127,12 @@ public class CollectionService {
     private boolean upsertOptions(PositionDto dto, LocalDate date) {
         var existing = optionsRepo.findByTradeDateAndContractAndTraderType(date, dto.contract(), dto.traderType());
         OptionsPosition pos = existing.orElseGet(() -> new OptionsPosition(date, dto.contract(), dto.traderType()));
-        applyToOptions(pos, dto);
+        applyDto(pos, dto);
         optionsRepo.save(pos);
         return existing.isEmpty();
     }
 
-    private void applyToFutures(FuturesPosition pos, PositionDto dto) {
-        pos.setTradingLongVolume(dto.tradingLongVolume());
-        pos.setTradingLongValue(dto.tradingLongValue());
-        pos.setTradingShortVolume(dto.tradingShortVolume());
-        pos.setTradingShortValue(dto.tradingShortValue());
-        pos.setTradingNetVolume(dto.tradingNetVolume());
-        pos.setTradingNetValue(dto.tradingNetValue());
-        pos.setOiLongVolume(dto.oiLongVolume());
-        pos.setOiLongValue(dto.oiLongValue());
-        pos.setOiShortVolume(dto.oiShortVolume());
-        pos.setOiShortValue(dto.oiShortValue());
-        pos.setOiNetVolume(dto.oiNetVolume());
-        pos.setOiNetValue(dto.oiNetValue());
-    }
-
-    private void applyToOptions(OptionsPosition pos, PositionDto dto) {
+    private void applyDto(AbstractMarketPosition pos, PositionDto dto) {
         pos.setTradingLongVolume(dto.tradingLongVolume());
         pos.setTradingLongValue(dto.tradingLongValue());
         pos.setTradingShortVolume(dto.tradingShortVolume());
