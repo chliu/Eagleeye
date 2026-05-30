@@ -264,7 +264,7 @@ function opts(yFmt, yTooltipFmt) {
             if (ctx.dataset.yAxisID === 'y2') {
               return ctx.dataset.label + ': ' + (v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v);
             }
-            return ctx.dataset.label + ': ' + yTooltipFmt(v);
+            return ctx.dataset.label + ': ' + yTooltipFmt(v, ctx);
           }
         } : {}
       }
@@ -300,6 +300,8 @@ const fmtThousand = v => {
   if (Math.abs(v) >= 1000)  return (v / 1000).toFixed(1) + 'K';
   return String(v);
 };
+// 融資變化資料已換算為億 (仟元 ÷ 100,000); 軸/tooltip 僅加號與單位
+const fmtYiVal = v => (v >= 0 ? '+' : '') + v.toFixed(1) + '億';
 
 // Chart 1: 外資買賣超
 new Chart(document.getElementById('spotChart'), {
@@ -318,17 +320,40 @@ new Chart(document.getElementById('spotChart'), {
   options: opts(fmtYi)
 });
 
-// Chart 2: 資券變化
+// Chart 2: 資券變化 — 融資(億, 左軸 y) / 融券(張, 右軸 y3) / 加權指數(右軸 y2)
+// 融資原始為金額(仟元), ÷100,000 → 億; 融券為張數, 維持原值
+const marginYi = marginChg.map(v => v == null ? null : v / 1e5);
+const absMax = a => Math.max(1, ...a.filter(v => v != null).map(Math.abs));
+const mAbs = absMax(marginYi), sAbs = absMax(shortChg);
+
+const marginOpts = opts(fmtYiVal);
+// 兩條長條皆為正負發散, 對稱上下界讓 0 基線對齊
+marginOpts.scales.y.min  = -mAbs; marginOpts.scales.y.max  = mAbs;
+marginOpts.scales.y3 = {
+  position: 'right',
+  min: -sAbs, max: sAbs,
+  ticks: { color: TEXT, font: { size: 9 }, callback: fmtThousand },
+  grid: { drawOnChartArea: false }
+};
+marginOpts.plugins.tooltip.callbacks = {
+  label: ctx => {
+    const v = ctx.parsed.y;
+    if (ctx.dataset.yAxisID === 'y2') return ctx.dataset.label + ': ' + (v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v);
+    if (ctx.dataset.yAxisID === 'y3') return ctx.dataset.label + ': ' + fmtThousand(v) + '張';
+    return ctx.dataset.label + ': ' + fmtYiVal(v);
+  }
+};
+
 new Chart(document.getElementById('marginChart'), {
   data: {
     labels,
     datasets: [
-      { type: 'bar', label: '融資變化', data: marginChg, backgroundColor: RED,   yAxisID: 'y', order: 1 },
-      { type: 'bar', label: '融券變化', data: shortChg,  backgroundColor: GREEN, yAxisID: 'y', order: 1 },
+      { type: 'bar', label: '融資變化', data: marginYi, backgroundColor: RED,   yAxisID: 'y',  order: 1 },
+      { type: 'bar', label: '融券變化', data: shortChg, backgroundColor: GREEN, yAxisID: 'y3', order: 1 },
       taiexDs()
     ]
   },
-  options: opts(fmtThousand)
+  options: marginOpts
 });
 
 const RED_POS = RED, RED_NEG = RED_DIM, GREEN_POS = GREEN, GREEN_NEG = GRN_DIM;
