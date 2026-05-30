@@ -322,7 +322,7 @@ new Chart(document.getElementById('spotChart'), {
 
 // Chart 2: 資券變化 — 融資(億, 左軸 y) / 融券(張, 右軸 y3) / 加權指數(右軸 y2)
 // 融資原始為金額(仟元), ÷100,000 → 億; 融券為張數, 維持原值
-const marginYi = marginChg.map(v => v == null ? null : v / 1e5);
+const marginYi = marginChg.map(v => v == null ? null : v / 1000);
 const absMax = a => Math.max(1, ...a.filter(v => v != null).map(Math.abs));
 const mAbs = absMax(marginYi), sAbs = absMax(shortChg);
 
