@@ -80,6 +80,19 @@ sudo chmod +x "$WEB_LINK"
 JAVA_BIN="$(command -v java)"
 JAVA_HOME_VAL="$(cd "$(dirname "$JAVA_BIN")/.." && pwd)"
 
+# ── 5d. Pre-generate CDS archive ──────────────────────────────────────────────
+# Warm the Class Data Sharing archive now (clean onRefresh exit) so the first
+# scheduled collection is already fast, rather than paying the one-time create
+# cost on a real run. Same flags as the plist so the archive matches at runtime.
+echo "==> Pre-generating collector CDS archive..."
+"$JAVA_BIN" --enable-native-access=ALL-UNNAMED \
+  -XX:+AutoCreateSharedArchive -XX:SharedArchiveFile="$COLLECTOR_DIR/collector.jsa" \
+  -Xlog:cds=off -Dspring.context.exit=onRefresh \
+  -jar "$COLLECTOR_DIR/eagleeye-collector.jar" \
+  --spring.profiles.active=prod --logging.level.root=WARN >/dev/null 2>&1 \
+  && echo "    archive: $COLLECTOR_DIR/collector.jsa" \
+  || echo "    (skipped — archive will be created on first scheduled run)"
+
 # ── 6. Install launchd plist ──────────────────────────────────────────────────
 echo "==> Installing launchd agent..."
 sed "s|/usr/local/opt/openjdk@25|$JAVA_HOME_VAL|g" "$PLIST_SRC" > "$PLIST_DST"
