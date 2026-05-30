@@ -300,7 +300,6 @@ const fmtThousand = v => {
   if (Math.abs(v) >= 1000)  return (v / 1000).toFixed(1) + 'K';
   return String(v);
 };
-const fmtYi100k = v => (v / 1e5).toFixed(2) + '億';
 
 // Chart 1: 外資買賣超
 new Chart(document.getElementById('spotChart'), {
@@ -329,7 +328,7 @@ new Chart(document.getElementById('marginChart'), {
       taiexDs()
     ]
   },
-  options: opts(fmtYi100k, fmtYi100k)
+  options: opts(fmtThousand)
 });
 
 const RED_POS = RED, RED_NEG = RED_DIM, GREEN_POS = GREEN, GREEN_NEG = GRN_DIM;
