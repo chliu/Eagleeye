@@ -1,6 +1,6 @@
 package com.eagleeye.collector.runner;
 
-import com.eagleeye.collector.service.CollectionResult;
+import com.eagleeye.collector.service.FuturesOptionsCollectionResult;
 import com.eagleeye.collector.service.CollectionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +57,7 @@ public class BackfillRunner implements ApplicationRunner {
         log.info("=== Backfill start: {} → {} ===", from, to);
         System.out.printf("Backfill: %s → %s%n%n", from, to);
 
-        List<CollectionResult> results = new ArrayList<>();
+        List<FuturesOptionsCollectionResult> results = new ArrayList<>();
 
         LocalDate current = from;
         while (!current.isAfter(to)) {
@@ -69,15 +69,15 @@ public class BackfillRunner implements ApplicationRunner {
                 continue;
             }
 
-            CollectionResult result = collectionService.collectAll(current);
+            FuturesOptionsCollectionResult result = collectionService.collectAll(current);
             results.add(result);
 
             switch (result) {
-                case CollectionResult.Collected c -> printRow(current, "OK",
+                case FuturesOptionsCollectionResult.Collected c -> printRow(current, "OK",
                         c.futuresCount() + " rows",
                         c.optionsCount() + " rows");
-                case CollectionResult.NoData n    -> printRow(current, "HOLIDAY", "-", "-");
-                case CollectionResult.Error e     -> printRow(current, "ERROR", e.message(), "");
+                case FuturesOptionsCollectionResult.NoData n    -> printRow(current, "HOLIDAY", "-", "-");
+                case FuturesOptionsCollectionResult.Error e     -> printRow(current, "ERROR", e.message(), "");
             }
 
             Thread.sleep(REQUEST_DELAY_MS);
@@ -93,15 +93,15 @@ public class BackfillRunner implements ApplicationRunner {
                 date, status, futures, options);
     }
 
-    private void printSummary(LocalDate from, LocalDate to, List<CollectionResult> results) {
-        long tradeDays = results.stream().filter(CollectionResult.Collected.class::isInstance).count();
-        long holidays  = results.stream().filter(CollectionResult.NoData.class::isInstance).count();
-        long errors    = results.stream().filter(CollectionResult.Error.class::isInstance).count();
+    private void printSummary(LocalDate from, LocalDate to, List<FuturesOptionsCollectionResult> results) {
+        long tradeDays = results.stream().filter(FuturesOptionsCollectionResult.Collected.class::isInstance).count();
+        long holidays  = results.stream().filter(FuturesOptionsCollectionResult.NoData.class::isInstance).count();
+        long errors    = results.stream().filter(FuturesOptionsCollectionResult.Error.class::isInstance).count();
         long totalFut  = results.stream()
-                .mapToLong(r -> r instanceof CollectionResult.Collected c ? c.futuresCount() : 0L)
+                .mapToLong(r -> r instanceof FuturesOptionsCollectionResult.Collected c ? c.futuresCount() : 0L)
                 .sum();
         long totalOpt  = results.stream()
-                .mapToLong(r -> r instanceof CollectionResult.Collected c ? c.optionsCount() : 0L)
+                .mapToLong(r -> r instanceof FuturesOptionsCollectionResult.Collected c ? c.optionsCount() : 0L)
                 .sum();
 
         System.out.printf("""

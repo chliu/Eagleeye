@@ -11,5 +11,5 @@ public interface ScheduledCollector {
     /** Short display name used in logs and console output. */
     String name();
 
-    CollectResult collect(LocalDate date);
+    CollectorOutcome collect(LocalDate date);
 }

@@ -39,13 +39,13 @@ public class CollectionService {
      * Collects futures + options for the given date.
      * Returns NO_DATA when TAIFEX has no records for that date (weekend / holiday).
      */
-    public CollectionResult collectAll(LocalDate date) {
+    public FuturesOptionsCollectionResult collectAll(LocalDate date) {
         try {
             String futuresHtml = taifexClient.fetchFuturesHtml(date);
 
             if (taifexParser.isNoDataPage(futuresHtml)) {
                 log.info("No trading data for {} — skipping", date);
-                return new CollectionResult.NoData(date);
+                return new FuturesOptionsCollectionResult.NoData(date);
             }
 
             int futures = processFutures(futuresHtml, date);
@@ -54,11 +54,11 @@ public class CollectionService {
             int options = processOptions(optionsHtml, date);
 
             log.info("Collected {}: {} futures, {} options positions", date, futures, options);
-            return new CollectionResult.Collected(date, futures, options);
+            return new FuturesOptionsCollectionResult.Collected(date, futures, options);
 
         } catch (Exception e) {
             log.error("Collection failed for {}: {}", date, e.getMessage(), e);
-            return new CollectionResult.Error(date, e.getMessage());
+            return new FuturesOptionsCollectionResult.Error(date, e.getMessage());
         }
     }
 

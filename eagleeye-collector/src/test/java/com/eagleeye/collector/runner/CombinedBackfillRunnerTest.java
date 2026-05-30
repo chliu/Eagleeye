@@ -1,6 +1,6 @@
 package com.eagleeye.collector.runner;
 
-import com.eagleeye.collector.service.CollectionResult;
+import com.eagleeye.collector.service.FuturesOptionsCollectionResult;
 import com.eagleeye.collector.service.CollectionService;
 import com.eagleeye.collector.service.DateCollectionResult;
 import com.eagleeye.collector.service.InstitutionalFlowService;
@@ -194,7 +194,7 @@ class CombinedBackfillRunnerTest {
 
     private void stubTaifex() {
         when(collectionService.collectAll(any(LocalDate.class)))
-                .thenReturn(new CollectionResult.Collected(LocalDate.now(), 10, 10));
+                .thenReturn(new FuturesOptionsCollectionResult.Collected(LocalDate.now(), 10, 10));
     }
 
     private void stubMargin() {

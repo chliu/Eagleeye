@@ -2,7 +2,7 @@ package com.eagleeye.collector.twse;
 
 import tools.jackson.databind.JsonNode;
 
-class ParseUtils {
+class TwseJsonParser {
 
     static long toLong(String value) {
         return Long.parseLong(value.replace(",", ""));

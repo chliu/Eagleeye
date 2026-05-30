@@ -39,7 +39,7 @@ public class TaiexIndexParser {
         try {
             root = objectMapper.readTree(json);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Failed to parse TWSE JSON: " + ParseUtils.truncate(json), e);
+            throw new IllegalArgumentException("Failed to parse TWSE JSON: " + TwseJsonParser.truncate(json), e);
         }
 
         String stat = root.path("stat").asText("");
@@ -85,7 +85,7 @@ public class TaiexIndexParser {
         try {
             root = objectMapper.readTree(json);
         } catch (Exception e) {
-            log.warn("Failed to parse market stats JSON: {}", ParseUtils.truncate(json));
+            log.warn("Failed to parse market stats JSON: {}", TwseJsonParser.truncate(json));
             return result;
         }
 
@@ -96,8 +96,8 @@ public class TaiexIndexParser {
         for (JsonNode row : root.path("data")) {
             try {
                 LocalDate date = parseRocDate(row.get(0).asText());
-                long volume   = ParseUtils.toLong(row.get(1).asText());
-                long turnover = ParseUtils.toLong(row.get(2).asText());
+                long volume   = TwseJsonParser.toLong(row.get(1).asText());
+                long turnover = TwseJsonParser.toLong(row.get(2).asText());
                 result.put(date, new long[]{volume, turnover});
             } catch (Exception e) {
                 log.warn("Skipping unparseable market stats row {}: {}", row, e.getMessage());

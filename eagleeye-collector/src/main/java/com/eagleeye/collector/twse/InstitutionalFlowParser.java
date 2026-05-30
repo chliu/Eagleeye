@@ -33,19 +33,19 @@ public class InstitutionalFlowParser {
         try {
             root = objectMapper.readTree(json);
         } catch (Exception e) {
-            log.warn("Failed to parse institutional flow JSON: {}", ParseUtils.truncate(json));
+            log.warn("Failed to parse institutional flow JSON: {}", TwseJsonParser.truncate(json));
             return null;
         }
 
         String stat = root.path("stat").asText("");
         if (!"OK".equals(stat)) {
-            log.info("Institutional flow stat='{}' — no data for {} (raw: {})", stat, date, ParseUtils.truncate(json));
+            log.info("Institutional flow stat='{}' — no data for {} (raw: {})", stat, date, TwseJsonParser.truncate(json));
             return null;
         }
 
-        JsonNode data = ParseUtils.extractTableData(root);
+        JsonNode data = TwseJsonParser.extractTableData(root);
         if (!data.isArray() || data.isEmpty()) {
-            log.info("Institutional flow data missing for {} (raw: {})", date, ParseUtils.truncate(json));
+            log.info("Institutional flow data missing for {} (raw: {})", date, TwseJsonParser.truncate(json));
             return null;
         }
 
@@ -53,9 +53,9 @@ public class InstitutionalFlowParser {
             InstitutionalFlow flow = new InstitutionalFlow(date);
             for (JsonNode row : data) {
                 String label = row.get(0).asText();
-                long buy  = ParseUtils.toLong(row.get(1).asText());
-                long sell = ParseUtils.toLong(row.get(2).asText());
-                long net  = ParseUtils.toLong(row.get(3).asText());
+                long buy  = TwseJsonParser.toLong(row.get(1).asText());
+                long sell = TwseJsonParser.toLong(row.get(2).asText());
+                long net  = TwseJsonParser.toLong(row.get(3).asText());
                 if (label.contains("Foreign Investors")) {
                     flow.setForeignBuy(buy);
                     flow.setForeignSell(sell);

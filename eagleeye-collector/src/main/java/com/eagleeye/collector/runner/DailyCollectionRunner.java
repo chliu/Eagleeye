@@ -1,6 +1,6 @@
 package com.eagleeye.collector.runner;
 
-import com.eagleeye.collector.collector.CollectResult;
+import com.eagleeye.collector.collector.CollectorOutcome;
 import com.eagleeye.collector.collector.ScheduledCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,7 +85,7 @@ public class DailyCollectionRunner implements ApplicationRunner {
 
     private void dispatch(ScheduledCollector collector, LocalDate date) {
         log.info("=== Collecting {} for {} ===", collector.name(), date);
-        CollectResult result = collector.collect(date);
+        CollectorOutcome result = collector.collect(date);
         System.out.printf("  [%-6s]  %s  %s%n", collector.name(), date, result.detail());
     }
 }

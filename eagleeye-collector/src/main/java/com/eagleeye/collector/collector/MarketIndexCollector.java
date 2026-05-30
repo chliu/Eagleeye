@@ -23,12 +23,12 @@ public class MarketIndexCollector implements ScheduledCollector {
     @Override public String name() { return "TAIEX"; }
 
     @Override
-    public CollectResult collect(LocalDate date) {
+    public CollectorOutcome collect(LocalDate date) {
         var result = service.collectMonth(YearMonth.from(date));
         return switch (result) {
-            case MarketIndexCollectionResult.Collected c -> CollectResult.collected("bars: " + c.barsCount());
-            case MarketIndexCollectionResult.NoData n    -> CollectResult.noData();
-            case MarketIndexCollectionResult.Error e     -> CollectResult.error(e.message());
+            case MarketIndexCollectionResult.Collected c -> CollectorOutcome.collected("bars: " + c.barsCount());
+            case MarketIndexCollectionResult.NoData n    -> CollectorOutcome.noData();
+            case MarketIndexCollectionResult.Error e     -> CollectorOutcome.error(e.message());
         };
     }
 }

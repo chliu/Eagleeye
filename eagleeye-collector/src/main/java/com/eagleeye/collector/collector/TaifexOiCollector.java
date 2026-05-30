@@ -21,13 +21,13 @@ public class TaifexOiCollector implements ScheduledCollector {
     @Override public String name() { return "TAIFEX"; }
 
     @Override
-    public CollectResult collect(LocalDate date) {
+    public CollectorOutcome collect(LocalDate date) {
         var result = service.collectAll(date);
         return switch (result) {
-            case com.eagleeye.collector.service.CollectionResult.Collected c -> CollectResult.collected(
+            case com.eagleeye.collector.service.FuturesOptionsCollectionResult.Collected c -> CollectorOutcome.collected(
                     "futures: " + c.futuresCount() + "  options: " + c.optionsCount());
-            case com.eagleeye.collector.service.CollectionResult.NoData n   -> CollectResult.noData();
-            case com.eagleeye.collector.service.CollectionResult.Error e    -> CollectResult.error(e.message());
+            case com.eagleeye.collector.service.FuturesOptionsCollectionResult.NoData n   -> CollectorOutcome.noData();
+            case com.eagleeye.collector.service.FuturesOptionsCollectionResult.Error e    -> CollectorOutcome.error(e.message());
         };
     }
 }

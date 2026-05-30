@@ -22,12 +22,12 @@ public class FuturesAhCollector implements ScheduledCollector {
     @Override public String name() { return "FUTAH"; }
 
     @Override
-    public CollectResult collect(LocalDate date) {
+    public CollectorOutcome collect(LocalDate date) {
         var result = service.collectDate(date);
         return switch (result) {
-            case DateCollectionResult.Collected c -> CollectResult.collected("ok");
-            case DateCollectionResult.NoData n    -> CollectResult.noData();
-            case DateCollectionResult.Error e     -> CollectResult.error(e.message());
+            case DateCollectionResult.Collected c -> CollectorOutcome.collected("ok");
+            case DateCollectionResult.NoData n    -> CollectorOutcome.noData();
+            case DateCollectionResult.Error e     -> CollectorOutcome.error(e.message());
         };
     }
 }

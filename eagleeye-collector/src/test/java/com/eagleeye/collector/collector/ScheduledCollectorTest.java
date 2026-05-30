@@ -37,7 +37,7 @@ class ScheduledCollectorTest {
         when(marketIndexService.collectMonth(YearMonth.from(DATE)))
                 .thenReturn(new MarketIndexCollectionResult.Collected(YearMonth.from(DATE), 18));
 
-        CollectResult result = new MarketIndexCollector(marketIndexService).collect(DATE);
+        CollectorOutcome result = new MarketIndexCollector(marketIndexService).collect(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
         assertThat(result.detail()).isEqualTo("bars: 18");
@@ -48,7 +48,7 @@ class ScheduledCollectorTest {
         when(marketIndexService.collectMonth(any()))
                 .thenReturn(new MarketIndexCollectionResult.NoData(YearMonth.from(DATE)));
 
-        CollectResult result = new MarketIndexCollector(marketIndexService).collect(DATE);
+        CollectorOutcome result = new MarketIndexCollector(marketIndexService).collect(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.NO_DATA);
     }
@@ -58,7 +58,7 @@ class ScheduledCollectorTest {
         when(marketIndexService.collectMonth(any()))
                 .thenReturn(new MarketIndexCollectionResult.Error(YearMonth.from(DATE), "timeout"));
 
-        CollectResult result = new MarketIndexCollector(marketIndexService).collect(DATE);
+        CollectorOutcome result = new MarketIndexCollector(marketIndexService).collect(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.ERROR);
         assertThat(result.detail()).contains("timeout");
@@ -77,7 +77,7 @@ class ScheduledCollectorTest {
         when(institutionalFlowService.collectDate(DATE))
                 .thenReturn(new DateCollectionResult.Collected(DATE));
 
-        CollectResult result = new InstitutionalFlowCollector(institutionalFlowService).collect(DATE);
+        CollectorOutcome result = new InstitutionalFlowCollector(institutionalFlowService).collect(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
         assertThat(result.detail()).isEqualTo("ok");
@@ -97,7 +97,7 @@ class ScheduledCollectorTest {
         when(institutionalFlowService.collectDate(DATE))
                 .thenReturn(new DateCollectionResult.Error(DATE, "connection refused"));
 
-        CollectResult result = new InstitutionalFlowCollector(institutionalFlowService).collect(DATE);
+        CollectorOutcome result = new InstitutionalFlowCollector(institutionalFlowService).collect(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.ERROR);
         assertThat(result.detail()).contains("connection refused");
@@ -114,9 +114,9 @@ class ScheduledCollectorTest {
     @Test
     void taifex_collected_returnsFuturesAndOptionsCount() {
         when(collectionService.collectAll(DATE))
-                .thenReturn(new CollectionResult.Collected(DATE, 9, 12));
+                .thenReturn(new FuturesOptionsCollectionResult.Collected(DATE, 9, 12));
 
-        CollectResult result = new TaifexOiCollector(collectionService).collect(DATE);
+        CollectorOutcome result = new TaifexOiCollector(collectionService).collect(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
         assertThat(result.detail()).isEqualTo("futures: 9  options: 12");
@@ -125,7 +125,7 @@ class ScheduledCollectorTest {
     @Test
     void taifex_noData_returnsNoData() {
         when(collectionService.collectAll(DATE))
-                .thenReturn(new CollectionResult.NoData(DATE));
+                .thenReturn(new FuturesOptionsCollectionResult.NoData(DATE));
 
         assertThat(new TaifexOiCollector(collectionService).collect(DATE).status())
                 .isEqualTo(CollectionStatus.NO_DATA);
@@ -134,9 +134,9 @@ class ScheduledCollectorTest {
     @Test
     void taifex_error_returnsError() {
         when(collectionService.collectAll(DATE))
-                .thenReturn(new CollectionResult.Error(DATE, "parse failed"));
+                .thenReturn(new FuturesOptionsCollectionResult.Error(DATE, "parse failed"));
 
-        CollectResult result = new TaifexOiCollector(collectionService).collect(DATE);
+        CollectorOutcome result = new TaifexOiCollector(collectionService).collect(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.ERROR);
         assertThat(result.detail()).contains("parse failed");
@@ -155,7 +155,7 @@ class ScheduledCollectorTest {
         when(marginTransactionService.collectDate(DATE))
                 .thenReturn(new DateCollectionResult.Collected(DATE));
 
-        CollectResult result = new MarginCollector(marginTransactionService).collect(DATE);
+        CollectorOutcome result = new MarginCollector(marginTransactionService).collect(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
         assertThat(result.detail()).isEqualTo("ok");
@@ -175,7 +175,7 @@ class ScheduledCollectorTest {
         when(marginTransactionService.collectDate(DATE))
                 .thenReturn(new DateCollectionResult.Error(DATE, "HTTP 503"));
 
-        CollectResult result = new MarginCollector(marginTransactionService).collect(DATE);
+        CollectorOutcome result = new MarginCollector(marginTransactionService).collect(DATE);
 
         assertThat(result.status()).isEqualTo(CollectionStatus.ERROR);
         assertThat(result.detail()).contains("HTTP 503");

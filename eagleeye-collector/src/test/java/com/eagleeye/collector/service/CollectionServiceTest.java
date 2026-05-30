@@ -41,9 +41,9 @@ class CollectionServiceTest {
         when(taifexClient.fetchFuturesHtml(DATE)).thenReturn("<html>No Data</html>");
         when(taifexParser.isNoDataPage("<html>No Data</html>")).thenReturn(true);
 
-        CollectionResult result = service.collectAll(DATE);
+        FuturesOptionsCollectionResult result = service.collectAll(DATE);
 
-        assertThat(result).isInstanceOf(CollectionResult.NoData.class);
+        assertThat(result).isInstanceOf(FuturesOptionsCollectionResult.NoData.class);
         assertThat(result.date()).isEqualTo(DATE);
     }
 
@@ -69,10 +69,10 @@ class CollectionServiceTest {
                 .thenReturn(Optional.empty());
         when(optionsRepo.save(any())).thenAnswer(i -> i.getArgument(0));
 
-        CollectionResult result = service.collectAll(DATE);
+        FuturesOptionsCollectionResult result = service.collectAll(DATE);
 
-        assertThat(result).isInstanceOf(CollectionResult.Collected.class);
-        CollectionResult.Collected collected = (CollectionResult.Collected) result;
+        assertThat(result).isInstanceOf(FuturesOptionsCollectionResult.Collected.class);
+        FuturesOptionsCollectionResult.Collected collected = (FuturesOptionsCollectionResult.Collected) result;
         assertThat(collected.futuresCount()).isEqualTo(2);
         assertThat(collected.optionsCount()).isEqualTo(3);
     }
@@ -81,10 +81,10 @@ class CollectionServiceTest {
     void collectAll_error_whenClientThrows() {
         when(taifexClient.fetchFuturesHtml(DATE)).thenThrow(new RuntimeException("connection refused"));
 
-        CollectionResult result = service.collectAll(DATE);
+        FuturesOptionsCollectionResult result = service.collectAll(DATE);
 
-        assertThat(result).isInstanceOf(CollectionResult.Error.class);
-        CollectionResult.Error error = (CollectionResult.Error) result;
+        assertThat(result).isInstanceOf(FuturesOptionsCollectionResult.Error.class);
+        FuturesOptionsCollectionResult.Error error = (FuturesOptionsCollectionResult.Error) result;
         assertThat(error.message()).contains("connection refused");
     }
 

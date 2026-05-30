@@ -1,6 +1,6 @@
 package com.eagleeye.collector.runner;
 
-import com.eagleeye.collector.service.CollectionResult;
+import com.eagleeye.collector.service.FuturesOptionsCollectionResult;
 import com.eagleeye.collector.service.CollectionService;
 import com.eagleeye.collector.service.DateCollectionResult;
 import com.eagleeye.collector.service.InstitutionalFlowService;
@@ -108,7 +108,7 @@ public class CombinedBackfillRunner implements ApplicationRunner {
             while (!day.isAfter(dayEnd)) {
                 DayOfWeek dow = day.getDayOfWeek();
                 if (dow != DayOfWeek.SATURDAY && dow != DayOfWeek.SUNDAY) {
-                    CollectionResult result = collectionService.collectAll(day);
+                    FuturesOptionsCollectionResult result = collectionService.collectAll(day);
                     printTaifex(day, result);
                     Thread.sleep(requestDelayMs);
 
@@ -137,11 +137,11 @@ public class CombinedBackfillRunner implements ApplicationRunner {
         System.out.printf("  [TAIEX]   %-8s  %s%n", r.yearMonth(), status);
     }
 
-    private void printTaifex(LocalDate date, CollectionResult r) {
+    private void printTaifex(LocalDate date, FuturesOptionsCollectionResult r) {
         String status = switch (r) {
-            case CollectionResult.Collected c -> String.format("futures: %d  options: %d", c.futuresCount(), c.optionsCount());
-            case CollectionResult.NoData n    -> "holiday";
-            case CollectionResult.Error e     -> "ERROR: " + e.message();
+            case FuturesOptionsCollectionResult.Collected c -> String.format("futures: %d  options: %d", c.futuresCount(), c.optionsCount());
+            case FuturesOptionsCollectionResult.NoData n    -> "holiday";
+            case FuturesOptionsCollectionResult.Error e     -> "ERROR: " + e.message();
         };
         System.out.printf("  [TAIFEX]  %-12s  %s%n", date, status);
     }

@@ -30,20 +30,20 @@ public class MarginTransactionParser {
         try {
             root = objectMapper.readTree(json);
         } catch (Exception e) {
-            log.warn("Failed to parse margin JSON: {}", ParseUtils.truncate(json));
+            log.warn("Failed to parse margin JSON: {}", TwseJsonParser.truncate(json));
             return null;
         }
 
         String stat = root.path("stat").asText("");
         if (!"OK".equals(stat)) {
-            log.info("Margin stat='{}' — no data for {} (raw: {})", stat, date, ParseUtils.truncate(json));
+            log.info("Margin stat='{}' — no data for {} (raw: {})", stat, date, TwseJsonParser.truncate(json));
             return null;
         }
 
-        JsonNode data = ParseUtils.extractTableData(root);
+        JsonNode data = TwseJsonParser.extractTableData(root);
         if (!data.isArray() || data.size() < 2) {
             log.info("Margin data missing or incomplete for {} — {} rows (raw: {})",
-                    date, data.size(), ParseUtils.truncate(json));
+                    date, data.size(), TwseJsonParser.truncate(json));
             return null;
         }
 
@@ -54,16 +54,16 @@ public class MarginTransactionParser {
             JsonNode shortRow  = data.get(1);
 
             MarginTransaction tx = new MarginTransaction(date);
-            tx.setMarginPurchase(ParseUtils.toLong(marginRow.get(1).asText()));
-            tx.setMarginSale(ParseUtils.toLong(marginRow.get(2).asText()));
-            tx.setMarginCashRedemption(ParseUtils.toLong(marginRow.get(3).asText()));
-            tx.setMarginPrevBalance(ParseUtils.toLong(marginRow.get(4).asText()));
-            tx.setMarginBalance(ParseUtils.toLong(marginRow.get(5).asText()));
-            tx.setShortCovering(ParseUtils.toLong(shortRow.get(1).asText()));
-            tx.setShortSale(ParseUtils.toLong(shortRow.get(2).asText()));
-            tx.setShortStockRedemption(ParseUtils.toLong(shortRow.get(3).asText()));
-            tx.setShortPrevBalance(ParseUtils.toLong(shortRow.get(4).asText()));
-            tx.setShortBalance(ParseUtils.toLong(shortRow.get(5).asText()));
+            tx.setMarginPurchase(TwseJsonParser.toLong(marginRow.get(1).asText()));
+            tx.setMarginSale(TwseJsonParser.toLong(marginRow.get(2).asText()));
+            tx.setMarginCashRedemption(TwseJsonParser.toLong(marginRow.get(3).asText()));
+            tx.setMarginPrevBalance(TwseJsonParser.toLong(marginRow.get(4).asText()));
+            tx.setMarginBalance(TwseJsonParser.toLong(marginRow.get(5).asText()));
+            tx.setShortCovering(TwseJsonParser.toLong(shortRow.get(1).asText()));
+            tx.setShortSale(TwseJsonParser.toLong(shortRow.get(2).asText()));
+            tx.setShortStockRedemption(TwseJsonParser.toLong(shortRow.get(3).asText()));
+            tx.setShortPrevBalance(TwseJsonParser.toLong(shortRow.get(4).asText()));
+            tx.setShortBalance(TwseJsonParser.toLong(shortRow.get(5).asText()));
             return tx;
         } catch (Exception e) {
             log.warn("Failed to parse margin data rows for {}: {}", date, e.getMessage());
