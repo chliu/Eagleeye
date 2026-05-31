@@ -22,13 +22,14 @@ class DashboardServiceTest {
     @Mock InstitutionalFlowRepository flowRepo;
     @Mock FuturesPositionRepository futuresRepo;
     @Mock OptionsPositionRepository optionsRepo;
+    @Mock OptionsCallPutPositionRepository callPutRepo;
     @Mock MarginTransactionRepository marginRepo;
 
     DashboardService service;
 
     @BeforeEach
     void setUp() {
-        service = new DashboardService(taiexRepo, flowRepo, futuresRepo, optionsRepo, marginRepo);
+        service = new DashboardService(taiexRepo, flowRepo, futuresRepo, optionsRepo, callPutRepo, marginRepo);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -58,6 +59,12 @@ class DashboardServiceTest {
         op.setOiLongVolume(oiLong);
         op.setOiShortVolume(oiShort);
         return op;
+    }
+
+    OptionsCallPutPosition callPut(LocalDate date, RightType right, long oiNetValue) {
+        OptionsCallPutPosition cp = new OptionsCallPutPosition(date, "TXO", TraderType.FINI, right);
+        cp.setOiNetValue(oiNetValue);
+        return cp;
     }
 
     MarginTransaction margin(LocalDate date, long mBalance, long mPrev, long sBalance, long sPrev) {
@@ -136,6 +143,25 @@ class DashboardServiceTest {
 
         assertThat(vm.optionsCallOI()).containsExactly(500L);
         assertThat(vm.optionsPutOI()).containsExactly(300L);
+    }
+
+    @Test
+    void buildViewModel_computesOptionsCallPutNetValue() {
+        LocalDate d = LocalDate.of(2025, 3, 3);
+
+        when(taiexRepo.findByTradeDateBetweenOrderByTradeDateAsc(any(), any()))
+            .thenReturn(List.of(taiex(d, 2100000L)));
+        when(callPutRepo.findByContractAndTraderTypeAndRightTypeAndTradeDateBetweenOrderByTradeDateAsc(
+                eq("TXO"), eq(TraderType.FINI), eq(RightType.CALL), any(), any()))
+            .thenReturn(List.of(callPut(d, RightType.CALL, 569_039L)));
+        when(callPutRepo.findByContractAndTraderTypeAndRightTypeAndTradeDateBetweenOrderByTradeDateAsc(
+                eq("TXO"), eq(TraderType.FINI), eq(RightType.PUT), any(), any()))
+            .thenReturn(List.of(callPut(d, RightType.PUT, 101_887L)));
+
+        DashboardViewModel vm = service.buildViewModel(20);
+
+        assertThat(vm.optionsCallNetValue()).containsExactly(569_039L);
+        assertThat(vm.optionsPutNetValue()).containsExactly(101_887L);
     }
 
     @Test

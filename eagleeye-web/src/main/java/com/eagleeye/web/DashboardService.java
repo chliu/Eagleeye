@@ -3,12 +3,15 @@ package com.eagleeye.web;
 import com.eagleeye.domain.entity.FuturesPosition;
 import com.eagleeye.domain.entity.InstitutionalFlow;
 import com.eagleeye.domain.entity.MarginTransaction;
+import com.eagleeye.domain.entity.OptionsCallPutPosition;
 import com.eagleeye.domain.entity.OptionsPosition;
+import com.eagleeye.domain.entity.RightType;
 import com.eagleeye.domain.entity.TaiexIndex;
 import com.eagleeye.domain.entity.TraderType;
 import com.eagleeye.domain.repository.FuturesPositionRepository;
 import com.eagleeye.domain.repository.InstitutionalFlowRepository;
 import com.eagleeye.domain.repository.MarginTransactionRepository;
+import com.eagleeye.domain.repository.OptionsCallPutPositionRepository;
 import com.eagleeye.domain.repository.OptionsPositionRepository;
 import com.eagleeye.domain.repository.TaiexIndexRepository;
 import org.springframework.stereotype.Service;
@@ -32,17 +35,20 @@ public class DashboardService {
     private final InstitutionalFlowRepository flowRepo;
     private final FuturesPositionRepository futuresRepo;
     private final OptionsPositionRepository optionsRepo;
+    private final OptionsCallPutPositionRepository callPutRepo;
     private final MarginTransactionRepository marginRepo;
 
     public DashboardService(TaiexIndexRepository taiexRepo,
                             InstitutionalFlowRepository flowRepo,
                             FuturesPositionRepository futuresRepo,
                             OptionsPositionRepository optionsRepo,
+                            OptionsCallPutPositionRepository callPutRepo,
                             MarginTransactionRepository marginRepo) {
         this.taiexRepo = taiexRepo;
         this.flowRepo = flowRepo;
         this.futuresRepo = futuresRepo;
         this.optionsRepo = optionsRepo;
+        this.callPutRepo = callPutRepo;
         this.marginRepo = marginRepo;
     }
 
@@ -56,12 +62,20 @@ public class DashboardService {
             .findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc("TX", TraderType.FINI, from, to);
         List<OptionsPosition>   optionsList = optionsRepo
             .findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc("TXO", TraderType.FINI, from, to);
+        List<OptionsCallPutPosition> callList = callPutRepo
+            .findByContractAndTraderTypeAndRightTypeAndTradeDateBetweenOrderByTradeDateAsc(
+                "TXO", TraderType.FINI, RightType.CALL, from, to);
+        List<OptionsCallPutPosition> putList = callPutRepo
+            .findByContractAndTraderTypeAndRightTypeAndTradeDateBetweenOrderByTradeDateAsc(
+                "TXO", TraderType.FINI, RightType.PUT, from, to);
         List<MarginTransaction> marginList  = marginRepo.findByTradeDateBetweenOrderByTradeDateAsc(from, to);
 
         Map<LocalDate, TaiexIndex>        taiexMap = indexByDate(taiexList,   TaiexIndex::getTradeDate);
         Map<LocalDate, InstitutionalFlow> flowMap  = indexByDate(flowList,    InstitutionalFlow::getTradeDate);
         Map<LocalDate, FuturesPosition>   futMap   = indexByDate(futuresList, FuturesPosition::getTradeDate);
         Map<LocalDate, OptionsPosition>   optMap   = indexByDate(optionsList, OptionsPosition::getTradeDate);
+        Map<LocalDate, OptionsCallPutPosition> callMap = indexByDate(callList, OptionsCallPutPosition::getTradeDate);
+        Map<LocalDate, OptionsCallPutPosition> putMap  = indexByDate(putList,  OptionsCallPutPosition::getTradeDate);
         Map<LocalDate, MarginTransaction> mgnMap   = indexByDate(marginList,  MarginTransaction::getTradeDate);
 
         // Use taiex dates as the x-axis base (represents trading days).
@@ -84,12 +98,16 @@ public class DashboardService {
         List<Long>   futuresShortOI = new ArrayList<>();
         List<Long>   optionsCallOI  = new ArrayList<>();
         List<Long>   optionsPutOI   = new ArrayList<>();
+        List<Long>   optionsCallNetValue = new ArrayList<>();
+        List<Long>   optionsPutNetValue  = new ArrayList<>();
 
         for (LocalDate date : dates) {
             TaiexIndex        ti = taiexMap.get(date);
             InstitutionalFlow fl = flowMap.get(date);
             FuturesPosition   fp = futMap.get(date);
             OptionsPosition   op = optMap.get(date);
+            OptionsCallPutPosition cp = callMap.get(date);
+            OptionsCallPutPosition pp = putMap.get(date);
             MarginTransaction mg = mgnMap.get(date);
 
             isoDates.add(date.toString());
@@ -106,6 +124,9 @@ public class DashboardService {
 
             optionsCallOI.add(op != null ? op.getOiLongVolume()  : null);
             optionsPutOI.add(op != null ? op.getOiShortVolume()  : null);
+
+            optionsCallNetValue.add(cp != null ? cp.getOiNetValue() : null);
+            optionsPutNetValue.add(pp != null ? pp.getOiNetValue() : null);
         }
 
         return new DashboardViewModel(
@@ -113,6 +134,7 @@ public class DashboardService {
             marginChange, shortChange,
             futuresLongOI, futuresShortOI,
             optionsCallOI, optionsPutOI,
+            optionsCallNetValue, optionsPutNetValue,
             days);
     }
 
