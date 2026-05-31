@@ -1,6 +1,8 @@
 package com.eagleeye.collector.taifex;
 
+import com.eagleeye.domain.dto.OptionsCallPutDto;
 import com.eagleeye.domain.dto.PositionDto;
+import com.eagleeye.domain.entity.RightType;
 import com.eagleeye.domain.entity.TraderType;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -65,6 +67,75 @@ public class TaifexParser {
      */
     public List<PositionDto> parseAh(String html, LocalDate tradeDate) {
         return parseColumns(html, tradeDate, 6);
+    }
+
+    /**
+     * Parses the calls-and-puts options table, which splits each option commodity into
+     * CALL and PUT sections. Layout per commodity:
+     *
+     *   [SN rowspan=6] [Contract rowspan=6] [CALL rowspan=3] [Dealers]          [12 data cells]
+     *                                                         [Investment Trust] [12 data cells]
+     *                                                         [FINI]             [12 data cells]
+     *                                       [PUT  rowspan=3] [Dealers]          [12 data cells]
+     *                                                         [Investment Trust] [12 data cells]
+     *                                                         [FINI]             [12 data cells]
+     *
+     * Contract and call/put are disambiguated by rowspan (6 vs 3) — note that "CALL"/"PUT"
+     * also match {@link #CONTRACT_CODE_PATTERN}. Only the last of the 12 data columns
+     * (oiNetValue, 未平倉餘額-買賣差額-契約金額) is retained.
+     */
+    public List<OptionsCallPutDto> parseCallPut(String html, LocalDate tradeDate) {
+        Document doc = Jsoup.parse(html);
+        List<OptionsCallPutDto> results = new ArrayList<>();
+
+        Element table = findDataTable(doc);
+        if (table == null) {
+            log.warn("Could not find call/put data table in TAIFEX HTML for date {}", tradeDate);
+            return results;
+        }
+
+        String currentContract = null;
+        RightType currentRight = null;
+
+        for (Element row : table.select("tr")) {
+            String contract = findContractCodeRowspan(row, 6);
+            if (contract != null) currentContract = contract;
+
+            RightType right = findRightType(row);
+            if (right != null) currentRight = right;
+
+            String traderLabel = findTraderLabel(row.select("td"));
+            if (traderLabel == null || currentContract == null || currentRight == null) continue;
+
+            TraderType traderType;
+            try {
+                traderType = TraderType.fromLabel(traderLabel);
+            } catch (IllegalArgumentException e) {
+                log.debug("Unknown trader label '{}' for contract {}", traderLabel, currentContract);
+                continue;
+            }
+
+            long[] all = extractNumbers(row.select("td"));
+            if (all.length < 12) {
+                log.warn("Expected ≥12 numeric cells, got {} for {}/{}/{} on {}",
+                        all.length, currentContract, currentRight, traderType, tradeDate);
+                continue;
+            }
+
+            // Take the last 12 — the Dealer row carries an extra leading SN number
+            long[] n = Arrays.copyOfRange(all, all.length - 12, all.length);
+            PositionDto position = new PositionDto(tradeDate, currentContract, traderType,
+                    n[0],  n[1],   // trading long  vol, val
+                    n[2],  n[3],   // trading short vol, val
+                    n[4],  n[5],   // trading net   vol, val
+                    n[6],  n[7],   // OI     long   vol, val
+                    n[8],  n[9],   // OI     short  vol, val
+                    n[10], n[11]); // OI     net    vol, val
+            results.add(new OptionsCallPutDto(position, currentRight));
+        }
+
+        log.info("Parsed {} call/put positions for {}", results.size(), tradeDate);
+        return results;
     }
 
     private List<PositionDto> parseColumns(String html, LocalDate tradeDate, int numDataCols) {
@@ -152,6 +223,35 @@ public class TaifexParser {
             String text = cell.text().trim();
             if (text.matches(CONTRACT_CODE_PATTERN)) {
                 return text;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Returns the contract code from a cell with the given rowspan that matches the contract
+     * code pattern. Used by the call/put table where the contract cell spans 6 rows (the SN
+     * cell shares the same rowspan but is purely numeric and excluded by the pattern).
+     */
+    private String findContractCodeRowspan(Element row, int rowspan) {
+        for (Element cell : row.select("td[rowspan=" + rowspan + "]")) {
+            String text = cell.text().trim();
+            if (text.matches(CONTRACT_CODE_PATTERN)) {
+                return text;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Returns the CALL/PUT marker from a rowspan=3 cell, or null if none present.
+     */
+    private RightType findRightType(Element row) {
+        for (Element cell : row.select("td[rowspan=3]")) {
+            try {
+                return RightType.fromLabel(cell.text().trim());
+            } catch (IllegalArgumentException ignored) {
+                // Not a call/put marker cell
             }
         }
         return null;

@@ -13,6 +13,7 @@ public class TaifexClient {
     private static final String FUTURES_PATH    = "/enl/eng3/futContractsDate";
     private static final String FUTURES_AH_PATH = "/enl/eng3/futContractsDateAh";
     private static final String OPTIONS_PATH    = "/enl/eng3/optContractsDate";
+    private static final String OPTIONS_CALL_PUT_PATH = "/enl/eng3/callsAndPutsDate";
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
     private final RestClient restClient;
@@ -34,6 +35,10 @@ public class TaifexClient {
 
     public String fetchOptionsHtml(LocalDate date) {
         return fetch(OPTIONS_PATH, date);
+    }
+
+    public String fetchOptionsCallPutHtml(LocalDate date) {
+        return fetch(OPTIONS_CALL_PUT_PATH, date);
     }
 
     private String fetch(String path, LocalDate date) {

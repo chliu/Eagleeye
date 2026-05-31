@@ -2,11 +2,15 @@ package com.eagleeye.collector.service;
 
 import com.eagleeye.collector.taifex.TaifexClient;
 import com.eagleeye.collector.taifex.TaifexParser;
+import com.eagleeye.domain.dto.OptionsCallPutDto;
 import com.eagleeye.domain.dto.PositionDto;
 import com.eagleeye.domain.entity.FuturesPosition;
+import com.eagleeye.domain.entity.OptionsCallPutPosition;
 import com.eagleeye.domain.entity.OptionsPosition;
+import com.eagleeye.domain.entity.RightType;
 import com.eagleeye.domain.entity.TraderType;
 import com.eagleeye.domain.repository.FuturesPositionRepository;
+import com.eagleeye.domain.repository.OptionsCallPutPositionRepository;
 import com.eagleeye.domain.repository.OptionsPositionRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +35,7 @@ class CollectionServiceTest {
     @Mock TaifexParser              taifexParser;
     @Mock FuturesPositionRepository futuresRepo;
     @Mock OptionsPositionRepository optionsRepo;
+    @Mock OptionsCallPutPositionRepository callPutRepo;
 
     @InjectMocks CollectionService service;
 
@@ -68,6 +73,16 @@ class CollectionServiceTest {
         when(optionsRepo.findByTradeDateAndContractAndTraderType(any(), any(), any()))
                 .thenReturn(Optional.empty());
         when(optionsRepo.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        when(taifexClient.fetchOptionsCallPutHtml(DATE)).thenReturn("<html>callput</html>");
+        when(taifexParser.isNoDataPage("<html>callput</html>")).thenReturn(false);
+        when(taifexParser.parseCallPut("<html>callput</html>", DATE)).thenReturn(List.of(
+                cpDto("TXO", TraderType.FINI, RightType.CALL, 569039L),
+                cpDto("TXO", TraderType.FINI, RightType.PUT, 101887L)
+        ));
+        when(callPutRepo.findByTradeDateAndContractAndTraderTypeAndRightType(any(), any(), any(), any()))
+                .thenReturn(Optional.empty());
+        when(callPutRepo.save(any())).thenAnswer(i -> i.getArgument(0));
 
         FuturesOptionsCollectionResult result = service.collectAll(DATE);
 
@@ -136,7 +151,39 @@ class CollectionServiceTest {
                 .thenReturn(Optional.empty());
         when(optionsRepo.save(any())).thenAnswer(i -> i.getArgument(0));
 
+        when(taifexClient.fetchOptionsCallPutHtml(DATE)).thenReturn("<html>callput</html>");
+        when(taifexParser.parseCallPut("<html>callput</html>", DATE)).thenReturn(List.of());
+
         assertThat(service.collectOptions(DATE)).isEqualTo(2);
+    }
+
+    @Test
+    void collectOptions_persistsFullCallPutBreakdown() {
+        when(taifexClient.fetchOptionsHtml(DATE)).thenReturn("<html>data</html>");
+        when(taifexParser.isNoDataPage("<html>data</html>")).thenReturn(false);
+        when(taifexParser.parse("<html>data</html>", DATE)).thenReturn(List.of(dto("TXO", TraderType.FINI)));
+        when(optionsRepo.findByTradeDateAndContractAndTraderType(any(), any(), any()))
+                .thenReturn(Optional.empty());
+        when(optionsRepo.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        when(taifexClient.fetchOptionsCallPutHtml(DATE)).thenReturn("<html>callput</html>");
+        when(taifexParser.parseCallPut("<html>callput</html>", DATE)).thenReturn(List.of(
+                cpDto("TXO", TraderType.FINI, RightType.CALL, 569039L),
+                cpDto("TXO", TraderType.FINI, RightType.PUT, 101887L)
+        ));
+        when(callPutRepo.findByTradeDateAndContractAndTraderTypeAndRightType(any(), any(), any(), any()))
+                .thenReturn(Optional.empty());
+        when(callPutRepo.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        service.collectOptions(DATE);
+
+        verify(callPutRepo).save(argThat(p ->
+                "TXO".equals(p.getContract())
+                && p.getRightType() == RightType.CALL
+                && p.getOiNetValue() == 569039L));
+        verify(callPutRepo).save(argThat(p ->
+                p.getRightType() == RightType.PUT
+                && p.getOiNetValue() == 101887L));
     }
 
     // ── upsert: insert vs update ──────────────────────────────────────────────
@@ -183,6 +230,8 @@ class CollectionServiceTest {
         when(taifexClient.fetchOptionsHtml(DATE)).thenReturn("<html>data</html>");
         when(taifexParser.isNoDataPage(any())).thenReturn(false);
         when(taifexParser.parse(any(), any())).thenReturn(List.of(dto("TXO", TraderType.FINI)));
+        when(taifexClient.fetchOptionsCallPutHtml(DATE)).thenReturn("<html>callput</html>");
+        when(taifexParser.parseCallPut(any(), any())).thenReturn(List.of());
         when(optionsRepo.findByTradeDateAndContractAndTraderType(DATE, "TXO", TraderType.FINI))
                 .thenReturn(Optional.of(existing));
         when(optionsRepo.save(any())).thenAnswer(i -> i.getArgument(0));
@@ -198,5 +247,12 @@ class CollectionServiceTest {
         return new PositionDto(DATE, contract, traderType,
                 100L, 1000L, 80L, 800L, 20L, 200L,
                 500L, 5000L, 400L, 4000L, 100L, 1000L);
+    }
+
+    private OptionsCallPutDto cpDto(String contract, TraderType traderType, RightType rightType, long oiNetValue) {
+        PositionDto p = new PositionDto(DATE, contract, traderType,
+                0L, 0L, 0L, 0L, 0L, 0L,
+                0L, 0L, 0L, 0L, 0L, oiNetValue);
+        return new OptionsCallPutDto(p, rightType);
     }
 }

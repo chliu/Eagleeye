@@ -34,7 +34,8 @@ class DashboardControllerTest {
     DashboardViewModel emptyVm(int days) {
         return new DashboardViewModel(
             List.of(), List.of(), List.of(), List.of(), List.of(),
-            List.of(), List.of(), List.of(), List.of(), List.of(), days);
+            List.of(), List.of(), List.of(), List.of(), List.of(),
+            List.of(), List.of(), days);
     }
 
     @Test
