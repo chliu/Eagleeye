@@ -13,5 +13,7 @@ public record DashboardViewModel(
         List<Long>   futuresShortOI,
         List<Long>   optionsCallOI,
         List<Long>   optionsPutOI,
+        List<Long>   optionsCallNetValue,
+        List<Long>   optionsPutNetValue,
         int          days
 ) {}

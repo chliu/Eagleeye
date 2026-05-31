@@ -182,7 +182,7 @@ body {
     </div>
 
     <div class="chart-card">
-      <div class="chart-title">外資選擇權</div>
+      <div class="chart-title">外資選擇權買賣差額變化</div>
       <canvas id="optionsChart"></canvas>
     </div>
 
@@ -221,6 +221,8 @@ const futLong       = /*[[${vm.futuresLongOI}]]*/ [];
 const futShort      = /*[[${vm.futuresShortOI}]]*/ [];
 const optCall       = /*[[${vm.optionsCallOI}]]*/ [];
 const optPut        = /*[[${vm.optionsPutOI}]]*/ [];
+const optCallNet    = /*[[${vm.optionsCallNetValue}]]*/ [];
+const optPutNet     = /*[[${vm.optionsPutNetValue}]]*/ [];
 
 const AMBER   = '#d97706';
 const RED     = 'rgba(239,68,68,0.8)';
@@ -371,17 +373,25 @@ new Chart(document.getElementById('futuresChart'), {
   options: opts(fmtThousand)
 });
 
-// Chart 4: 外資選擇權
+// Chart 4: 外資選擇權 — 買權/賣權未平倉買賣差額契約金額 (億)
+// 契約金額原始為仟元, ÷100,000 → 億; 對稱上下界讓 0 基線對齊
+const optCallNetVal = optCallNet.map(v => v == null ? null : v / 100000);
+const optPutNetVal  = optPutNet.map(v => v == null ? null : v / 100000);
+const optValAbs = Math.max(absMax(optCallNetVal), absMax(optPutNetVal));
+
+const optValOpts = opts(fmtYiVal, fmtYiVal);
+optValOpts.scales.y.min = -optValAbs; optValOpts.scales.y.max = optValAbs;
+
 new Chart(document.getElementById('optionsChart'), {
   data: {
     labels,
     datasets: [
-      { type: 'bar', label: '外資買權', data: optCall, backgroundColor: RED,   yAxisID: 'y', order: 1 },
-      { type: 'bar', label: '外資賣權', data: optPut,  backgroundColor: GREEN, yAxisID: 'y', order: 1 },
+      { type: 'bar', label: '買權差額', data: optCallNetVal, backgroundColor: RED,   yAxisID: 'y', order: 1 },
+      { type: 'bar', label: '賣權差額', data: optPutNetVal,  backgroundColor: GREEN, yAxisID: 'y', order: 1 },
       taiexDs()
     ]
   },
-  options: opts(fmtThousand)
+  options: optValOpts
 });
 
 // 台指期結算日 = 每月第三個週三 (day 15–21, weekday=3)
