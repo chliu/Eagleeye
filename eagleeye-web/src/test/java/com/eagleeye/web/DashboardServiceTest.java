@@ -21,6 +21,7 @@ class DashboardServiceTest {
     @Mock TaiexIndexRepository taiexRepo;
     @Mock InstitutionalFlowRepository flowRepo;
     @Mock FuturesPositionRepository futuresRepo;
+    @Mock FuturesAhPositionRepository futuresAhRepo;
     @Mock OptionsPositionRepository optionsRepo;
     @Mock OptionsCallPutPositionRepository callPutRepo;
     @Mock MarginTransactionRepository marginRepo;
@@ -29,7 +30,7 @@ class DashboardServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new DashboardService(taiexRepo, flowRepo, futuresRepo, optionsRepo, callPutRepo, marginRepo);
+        service = new DashboardService(taiexRepo, flowRepo, futuresRepo, futuresAhRepo, optionsRepo, callPutRepo, marginRepo);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -201,6 +202,8 @@ class DashboardServiceTest {
             .thenReturn(List.of(flow(d1, 1_000_000_000L), flow(d2, -500_000_000L)));
         when(futuresRepo.findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc(eq("TX"), eq(TraderType.FINI), any(), any()))
             .thenReturn(List.of(futures(d1, 1000L, 800L), futures(d2, 900L, 900L)));
+        when(futuresAhRepo.findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc(eq("TX"), eq(TraderType.FINI), any(), any()))
+            .thenReturn(List.of());
         when(optionsRepo.findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc(eq("TXO"), eq(TraderType.FINI), any(), any()))
             .thenReturn(List.of(options(d1, 500L, 300L), options(d2, 400L, 200L)));
         when(marginRepo.findByTradeDateBetweenOrderByTradeDateAsc(any(), any()))
@@ -221,6 +224,8 @@ class DashboardServiceTest {
             .thenReturn(List.of(flow(d, foreignNet)));
         when(futuresRepo.findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc(eq("TX"), eq(TraderType.FINI), any(), any()))
             .thenReturn(List.of(futures(d, oiLong, oiShort)));
+        when(futuresAhRepo.findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc(eq("TX"), eq(TraderType.FINI), any(), any()))
+            .thenReturn(List.of());
         when(optionsRepo.findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc(eq("TXO"), eq(TraderType.FINI), any(), any()))
             .thenReturn(List.of(options(d, optCall, optPut)));
         when(marginRepo.findByTradeDateBetweenOrderByTradeDateAsc(any(), any()))

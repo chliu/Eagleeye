@@ -223,6 +223,9 @@ const optCall       = /*[[${vm.optionsCallOI}]]*/ [];
 const optPut        = /*[[${vm.optionsPutOI}]]*/ [];
 const optCallNet    = /*[[${vm.optionsCallNetValue}]]*/ [];
 const optPutNet     = /*[[${vm.optionsPutNetValue}]]*/ [];
+const ahLong        = /*[[${vm.futuresAhLong}]]*/ [];
+const ahShort       = /*[[${vm.futuresAhShort}]]*/ [];
+const ahNet         = /*[[${vm.futuresAhNet}]]*/ [];
 
 const AMBER   = '#d97706';
 const RED     = 'rgba(239,68,68,0.8)';
@@ -436,7 +439,8 @@ function fmtVol(v) {
       lbl: settle ? `<span class="settle">${lbl} *</span>` : lbl,
       long: l, longD: futLongDelta[i],
       short: s, shortD: futShortDelta[i],
-      net: (l != null && s != null) ? l - s : null
+      net: (l != null && s != null) ? l - s : null,
+      ahL: ahLong[i], ahS: ahShort[i], ahN: ahNet[i]
     };
   }).reverse();
 
@@ -446,6 +450,7 @@ function fmtVol(v) {
       <th>多單</th><th>Δ多單</th>
       <th>空單</th><th>Δ空單</th>
       <th>淨部位</th>
+      <th>夜盤多</th><th>夜盤空</th><th>夜盤淨</th>
     </tr></thead>
     <tbody>${rows.map(r => `<tr>
       <td>${r.lbl}</td>
@@ -454,6 +459,9 @@ function fmtVol(v) {
       <td>${fmtVol(r.short)}</td>
       <td>${fmtDelta(r.shortD)}</td>
       <td>${fmtNet(r.net)}</td>
+      <td>${fmtVol(r.ahL)}</td>
+      <td>${fmtVol(r.ahS)}</td>
+      <td>${fmtNet(r.ahN)}</td>
     </tr>`).join('')}</tbody>
   </table>`;
   document.getElementById('futuresDeltaTable').innerHTML = html;
