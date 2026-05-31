@@ -1,6 +1,8 @@
 package com.eagleeye.collector.taifex;
 
+import com.eagleeye.domain.dto.OptionsCallPutDto;
 import com.eagleeye.domain.dto.PositionDto;
+import com.eagleeye.domain.entity.RightType;
 import com.eagleeye.domain.entity.TraderType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,6 +79,53 @@ class TaifexParserTest {
         assertThat(dealer.tradingNetVolume()).isEqualTo(-2162L);
         assertThat(dealer.oiLongVolume()).isEqualTo(68053L);
         assertThat(dealer.oiNetVolume()).isEqualTo(-10247L);
+    }
+
+    // -----------------------------------------------------------------------
+    // Calls-and-puts table: contract rowspan=6, CALL/PUT rowspan=3, 3 trader rows each
+    // -----------------------------------------------------------------------
+    @Test
+    void parseCallPut_extracts_all_twelve_columns_per_trader_split_by_right() {
+        // 12 data columns: trLongVol, trLongVal, trShortVol, trShortVal, trNetVol, trNetVal,
+        //                  oiLongVol, oiLongVal, oiShortVol, oiShortVal, oiNetVol, oiNetVal
+        String html = buildTable(
+                callPutRow(true, "1", "TXO", "CALL", "Dealers",
+                        "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "-953601"),
+                callPutTraderRow("Investment Trust",
+                        "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "-82826"),
+                callPutTraderRow("FINI",
+                        "73728", "760472", "73387", "834188", "341", "-73717",
+                        "10691", "1996813", "9137", "1512653", "1554", "569039"),
+                callPutRow(false, null, null, "PUT", "Dealers",
+                        "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "-57345"),
+                callPutTraderRow("Investment Trust",
+                        "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "-9643"),
+                callPutTraderRow("FINI",
+                        "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "101887")
+        );
+
+        List<OptionsCallPutDto> results = parser.parseCallPut(html, TEST_DATE);
+
+        assertThat(results).hasSize(6);
+
+        OptionsCallPutDto finiCall = findCallPut(results, TraderType.FINI, RightType.CALL);
+        PositionDto p = finiCall.position();
+        assertThat(p.contract()).isEqualTo("TXO");
+        assertThat(p.tradingLongVolume()).isEqualTo(73728L);
+        assertThat(p.oiLongValue()).isEqualTo(1996813L);
+        assertThat(p.oiShortValue()).isEqualTo(1512653L);   // 賣方未平倉契約金額
+        assertThat(p.oiNetValue()).isEqualTo(569039L);        // 買賣差額契約金額 — headline metric
+
+        OptionsCallPutDto finiPut = findCallPut(results, TraderType.FINI, RightType.PUT);
+        assertThat(finiPut.position().oiNetValue()).isEqualTo(101887L);
+
+        OptionsCallPutDto dealerCall = findCallPut(results, TraderType.DEALER, RightType.CALL);
+        assertThat(dealerCall.position().oiNetValue()).isEqualTo(-953601L);
+    }
+
+    @Test
+    void parseCallPut_returns_empty_when_no_table_found() {
+        assertThat(parser.parseCallPut("<html><body>No data</body></html>", TEST_DATE)).isEmpty();
     }
 
     @Test
@@ -255,6 +304,41 @@ class TaifexParserTest {
         }
         sb.append("</tr>");
         return sb.toString();
+    }
+
+    /**
+     * Builds a call/put trader row carrying 12 data columns. The first row of a contract
+     * adds SN + Contract (rowspan=6); a row that begins a CALL/PUT section adds the
+     * right-type cell (rowspan=3).
+     */
+    private String callPutRow(boolean isFirstInContract, String sn, String contract,
+                              String rightLabel, String trader, String... vals) {
+        StringBuilder sb = new StringBuilder("<tr>");
+        if (isFirstInContract) {
+            sb.append("<td rowspan='6'>").append(sn).append("</td>");
+            sb.append("<td rowspan='6'>").append(contract).append("</td>");
+        }
+        sb.append("<td rowspan='3'>").append(rightLabel).append("</td>");
+        appendCallPutCells(sb, trader, vals);
+        return sb.append("</tr>").toString();
+    }
+
+    private String callPutTraderRow(String trader, String... vals) {
+        StringBuilder sb = new StringBuilder("<tr>");
+        appendCallPutCells(sb, trader, vals);
+        return sb.append("</tr>").toString();
+    }
+
+    private void appendCallPutCells(StringBuilder sb, String trader, String... vals) {
+        sb.append("<td>").append(trader).append("</td>");
+        for (String v : vals) sb.append("<td>").append(v).append("</td>");
+    }
+
+    private OptionsCallPutDto findCallPut(List<OptionsCallPutDto> list, TraderType type, RightType right) {
+        return list.stream()
+                .filter(p -> p.position().traderType() == type && p.rightType() == right)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("No call/put position for " + type + "/" + right));
     }
 
     private PositionDto findBy(List<PositionDto> positions, TraderType type) {

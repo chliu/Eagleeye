@@ -2,11 +2,14 @@ package com.eagleeye.collector.service;
 
 import com.eagleeye.collector.taifex.TaifexClient;
 import com.eagleeye.collector.taifex.TaifexParser;
+import com.eagleeye.domain.dto.OptionsCallPutDto;
 import com.eagleeye.domain.dto.PositionDto;
 import com.eagleeye.domain.entity.AbstractMarketPosition;
 import com.eagleeye.domain.entity.FuturesPosition;
+import com.eagleeye.domain.entity.OptionsCallPutPosition;
 import com.eagleeye.domain.entity.OptionsPosition;
 import com.eagleeye.domain.repository.FuturesPositionRepository;
+import com.eagleeye.domain.repository.OptionsCallPutPositionRepository;
 import com.eagleeye.domain.repository.OptionsPositionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,15 +28,18 @@ public class CollectionService {
     private final TaifexParser taifexParser;
     private final FuturesPositionRepository futuresRepo;
     private final OptionsPositionRepository optionsRepo;
+    private final OptionsCallPutPositionRepository callPutRepo;
 
     public CollectionService(TaifexClient taifexClient,
                              TaifexParser taifexParser,
                              FuturesPositionRepository futuresRepo,
-                             OptionsPositionRepository optionsRepo) {
+                             OptionsPositionRepository optionsRepo,
+                             OptionsCallPutPositionRepository callPutRepo) {
         this.taifexClient = taifexClient;
         this.taifexParser = taifexParser;
         this.futuresRepo = futuresRepo;
         this.optionsRepo = optionsRepo;
+        this.callPutRepo = callPutRepo;
     }
 
     /**
@@ -54,6 +60,9 @@ public class CollectionService {
 
             String optionsHtml = taifexClient.fetchOptionsHtml(date);
             int options = processOptions(optionsHtml, date);
+
+            String callPutHtml = taifexClient.fetchOptionsCallPutHtml(date);
+            processOptionsCallPut(callPutHtml, date);
 
             log.info("Collected {}: {} futures, {} options positions", date, futures, options);
             return new FuturesOptionsCollectionResult.Collected(date, futures, options);
@@ -87,7 +96,9 @@ public class CollectionService {
             log.info("No options data for {}", date);
             return 0;
         }
-        return processOptions(html, date);
+        int count = processOptions(html, date);
+        processOptionsCallPut(taifexClient.fetchOptionsCallPutHtml(date), date);
+        return count;
     }
 
     // -----------------------------------------------------------------------
@@ -112,6 +123,30 @@ public class CollectionService {
         }
         log.info("Options positions for {}: {} inserted, {} updated", date, inserted, updated);
         return dtos.size();
+    }
+
+    protected int processOptionsCallPut(String html, LocalDate date) {
+        if (taifexParser.isNoDataPage(html)) {
+            log.info("No call/put options data for {}", date);
+            return 0;
+        }
+        List<OptionsCallPutDto> dtos = taifexParser.parseCallPut(html, date);
+        for (OptionsCallPutDto dto : dtos) {
+            upsertOptionsCallPut(dto, date);
+        }
+        log.info("Call/put net values for {}: {} rows updated", date, dtos.size());
+        return dtos.size();
+    }
+
+    private void upsertOptionsCallPut(OptionsCallPutDto dto, LocalDate date) {
+        PositionDto p = dto.position();
+        OptionsCallPutPosition pos = callPutRepo
+                .findByTradeDateAndContractAndTraderTypeAndRightType(
+                        date, p.contract(), p.traderType(), dto.rightType())
+                .orElseGet(() -> new OptionsCallPutPosition(
+                        date, p.contract(), p.traderType(), dto.rightType()));
+        applyDto(pos, p);
+        callPutRepo.save(pos);
     }
 
     // Returns true if inserted, false if updated
