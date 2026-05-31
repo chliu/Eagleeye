@@ -17,6 +17,7 @@ public class InstitutionalFlow {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Convert(converter = LocalDateToIsoStringConverter.class)
     @Column(name = "trade_date", nullable = false)
     private LocalDate tradeDate;
 
