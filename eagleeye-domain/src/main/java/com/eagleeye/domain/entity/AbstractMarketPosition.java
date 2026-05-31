@@ -1,6 +1,7 @@
 package com.eagleeye.domain.entity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.GeneratedValue;
@@ -24,6 +25,7 @@ public abstract class AbstractMarketPosition {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Convert(converter = LocalDateToIsoStringConverter.class)
     @Column(name = "trade_date", nullable = false)
     private LocalDate tradeDate;
 
