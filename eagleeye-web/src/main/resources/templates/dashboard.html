@@ -460,20 +460,17 @@ function fmtVol(v) {
 })();
 
 (function buildOptionsTable() {
-  // 未平倉買賣差額契約金額 (仟元): 買權淨額、賣權淨額、以及兩者淨額 (買權−賣權) 的日增減
-  const optNetVal      = labels.map((_, i) =>
-    (optCallNet[i] != null && optPutNet[i] != null) ? optCallNet[i] - optPutNet[i] : null);
-  const optNetValDelta = delta(optNetVal);
-
   const rows = labels.map((lbl, i) => {
     const settle = isSettlement(isoDates[i]);
     const l = optCall[i], s = optPut[i];
+    const cNet = optCallNet[i], pNet = optPutNet[i];
     return {
       lbl: settle ? `<span class="settle">${lbl} *</span>` : lbl,
       long: l, longD: optCallDelta[i],
       short: s, shortD: optPutDelta[i],
       net: (l != null && s != null) ? l - s : null,
-      callMoney: optCallNet[i], putMoney: optPutNet[i], netMoneyD: optNetValDelta[i]
+      callMoney: cNet, putMoney: pNet,
+      moneySpread: (cNet != null && pNet != null) ? cNet - pNet : null
     };
   }).reverse();
 
@@ -483,7 +480,7 @@ function fmtVol(v) {
       <th>多單</th><th>Δ多單</th>
       <th>空單</th><th>Δ空單</th>
       <th>淨部位</th>
-      <th>買權金額</th><th>賣權金額</th><th>Δ淨額</th>
+      <th>買權金額</th><th>賣權金額</th><th>差額</th>
     </tr></thead>
     <tbody>${rows.map(r => `<tr>
       <td>${r.lbl}</td>
@@ -494,7 +491,7 @@ function fmtVol(v) {
       <td>${fmtNet(r.net)}</td>
       <td>${fmtVol(r.callMoney)}</td>
       <td>${fmtVol(r.putMoney)}</td>
-      <td>${fmtDelta(r.netMoneyD)}</td>
+      <td>${fmtNet(r.moneySpread)}</td>
     </tr>`).join('')}</tbody>
   </table>`;
   document.getElementById('optionsDeltaTable').innerHTML = html;
