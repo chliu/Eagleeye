@@ -16,6 +16,10 @@ done
 launchctl bootout "gui/$(id -u)/com.eagleeye.collector" 2>/dev/null || true
 rm -f "$LAUNCH_AGENTS/com.eagleeye.collector.plist"
 
+# Web dashboard
+launchctl bootout "gui/$(id -u)/com.eagleeye.web" 2>/dev/null || true
+rm -f "$LAUNCH_AGENTS/com.eagleeye.web.plist"
+
 echo "==> Removing binaries..."
 sudo rm -rf /opt/eagleeye
 sudo rm -f /usr/local/bin/eagleeye /usr/local/bin/eagleeye-backfill /usr/local/bin/eagleeye-web

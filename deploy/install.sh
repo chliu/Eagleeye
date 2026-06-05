@@ -120,6 +120,18 @@ for c in "${COLLECTORS[@]}"; do
     echo "    loaded $label"
 done
 
+# ── 7. Install launchd agent for web dashboard ────────────────────────────────
+echo "==> Installing web dashboard launchd agent..."
+WEB_LABEL="com.eagleeye.web"
+WEB_SRC="$DEPLOY_DIR/$WEB_LABEL.plist"
+WEB_DST="$LAUNCH_AGENTS/$WEB_LABEL.plist"
+
+sed "s|/usr/local/opt/openjdk@25|$JAVA_HOME_VAL|g" "$WEB_SRC" > "$WEB_DST"
+
+launchctl bootout "gui/$(id -u)/$WEB_LABEL" 2>/dev/null || true
+launchctl bootstrap "gui/$(id -u)" "$WEB_DST"
+echo "    loaded $WEB_LABEL (will start now and on every login)"
+
 echo ""
 echo "Done! EagleEye installed."
 echo ""

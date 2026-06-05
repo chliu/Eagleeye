@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    EagleEye web dashboard — runs on port 8080, starts at login, restarts on exit.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.eagleeye.web</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/opt/openjdk@25/bin/java</string>
+        <string>--enable-native-access=ALL-UNNAMED</string>
+        <string>-Dspring.profiles.active=prod</string>
+        <string>-Dlogging.level.root=WARN</string>
+        <string>-Dlogging.level.com.eagleeye=INFO</string>
+        <string>-Dlogging.level.org.springframework=WARN</string>
+        <string>-jar</string>
+        <string>/opt/eagleeye/web/eagleeye-web.jar</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/opt/eagleeye/logs/web.log</string>
+    <key>StandardErrorPath</key>
+    <string>/opt/eagleeye/logs/web-error.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>JAVA_HOME</key>
+        <string>/usr/local/opt/openjdk@25</string>
+    </dict>
+</dict>
+</plist>
