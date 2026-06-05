@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toMap;
@@ -83,7 +85,9 @@ public class DashboardService {
         Map<LocalDate, OptionsPosition>   optMap   = indexByDate(optionsList, OptionsPosition::getTradeDate);
         Map<LocalDate, OptionsCallPutPosition> callMap = indexByDate(callList, OptionsCallPutPosition::getTradeDate);
         Map<LocalDate, OptionsCallPutPosition> putMap  = indexByDate(putList,  OptionsCallPutPosition::getTradeDate);
-        Map<LocalDate, FuturesAhPosition>      ahMap   = indexByDate(futuresAhList, FuturesAhPosition::getTradeDate);
+        // NavigableMap so we can find the next AH entry after each trading day with higherKey().
+        NavigableMap<LocalDate, FuturesAhPosition> ahMap = futuresAhList.stream()
+            .collect(toMap(FuturesAhPosition::getTradeDate, Function.identity(), (a, b) -> b, TreeMap::new));
         Map<LocalDate, MarginTransaction> mgnMap   = indexByDate(marginList,  MarginTransaction::getTradeDate);
 
         // Use taiex dates as the x-axis base (represents trading days).
@@ -114,7 +118,6 @@ public class DashboardService {
 
         for (int i = 0; i < dates.size(); i++) {
             LocalDate date     = dates.get(i);
-            LocalDate nextDate = i + 1 < dates.size() ? dates.get(i + 1) : null;
 
             TaiexIndex        ti = taiexMap.get(date);
             InstitutionalFlow fl = flowMap.get(date);
@@ -122,8 +125,11 @@ public class DashboardService {
             OptionsPosition   op = optMap.get(date);
             OptionsCallPutPosition cp = callMap.get(date);
             OptionsCallPutPosition pp = putMap.get(date);
-            // 夜盤 trade_date = D+1 (collected next morning); pair with current day's 日盤 row
-            FuturesAhPosition ah = nextDate != null ? ahMap.get(nextDate) : null;
+            // AH data is stored under the next trading day's date (published after the session
+            // ends at 05:00). Use higherKey so we find the entry even when TAIEX日盤 for that
+            // next date hasn't been collected yet (e.g. Friday 夜盤 stored under Monday).
+            LocalDate nextAhDate = ahMap.higherKey(date);
+            FuturesAhPosition ah = nextAhDate != null ? ahMap.get(nextAhDate) : null;
             MarginTransaction mg = mgnMap.get(date);
 
             isoDates.add(date.toString());
