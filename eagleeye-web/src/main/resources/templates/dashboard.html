@@ -297,10 +297,6 @@ function opts(yFmt, yTooltipFmt) {
   };
 }
 
-const fmtYi = v => {
-  const yi = v / 1e8;
-  return (yi >= 0 ? '+' : '') + yi.toFixed(1);
-};
 const fmtThousand = v => {
   if (Math.abs(v) >= 10000) return (v / 10000).toFixed(1) + 'W';
   if (Math.abs(v) >= 1000)  return (v / 1000).toFixed(1) + 'K';
@@ -323,7 +319,7 @@ new Chart(document.getElementById('spotChart'), {
       taiexDs()
     ]
   },
-  options: opts(fmtYi)
+  options: opts(fmtYiVal)
 });
 
 // Chart 2: 資券變化 — 融資(億, 左軸 y) / 融券(張, 右軸 y3) / 加權指數(右軸 y2)
