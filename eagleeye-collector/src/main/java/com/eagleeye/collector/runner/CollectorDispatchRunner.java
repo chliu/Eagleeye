@@ -38,7 +38,8 @@ import java.util.Set;
     "!environment.containsProperty('backfill.from') && " +
     "!environment.containsProperty('combined.backfill.from') && " +
     "!environment.containsProperty('market-index.backfill.from') && " +
-    "!environment.containsProperty('futures-ah.backfill.from')"
+    "!environment.containsProperty('futures-ah.backfill.from') && " +
+    "!environment.containsProperty('txtick.backfill.from')"
 )
 public class CollectorDispatchRunner implements ApplicationRunner {
 
