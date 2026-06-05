@@ -32,7 +32,7 @@ public class TxTickParser {
             } catch (NumberFormatException e) {
                 continue;
             }
-            if (price <= 30000) continue;                                    // rule 4
+            if (price < 1000) continue;                                      // rule 4
 
             candidates.add(new Row(cols, contract, price, volume));
         }
