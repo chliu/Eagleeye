@@ -3,7 +3,7 @@
 set -euo pipefail
 
 LAUNCH_AGENTS="$HOME/Library/LaunchAgents"
-COLLECTORS=(futah taiex iflow taifex margin)
+COLLECTORS=(futah taiex iflow taifex margin txtick)
 
 echo "==> Stopping and removing launchd agents..."
 # Per-collector jobs (current layout)

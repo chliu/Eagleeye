@@ -17,7 +17,7 @@ BACKFILL_LINK="/usr/local/bin/eagleeye-backfill"
 WEB_LINK="/usr/local/bin/eagleeye-web"
 
 # Collectors, each its own launchd job (name-addressed via --collector=NAME).
-COLLECTORS=(futah taiex iflow taifex margin)
+COLLECTORS=(futah taiex iflow taifex margin txtick)
 
 # ── 1. Build ──────────────────────────────────────────────────────────────────
 echo "==> Building JARs..."
