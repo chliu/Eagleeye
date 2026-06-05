@@ -44,9 +44,9 @@ class TxTickParserTest {
     }
 
     @Test
-    void priceAtThresholdBoundary_filtered() {
-        assertThat(parser.parse(List.of(row("TX", "202606", "090000", "999", "5", "")), DATE))
-            .isEmpty();
+    void priceAtThresholdBoundary_included() {
+        assertThat(parser.parse(List.of(row("TX", "202606", "090000", "1000", "5", "")), DATE))
+            .hasSize(1);
     }
 
     @Test

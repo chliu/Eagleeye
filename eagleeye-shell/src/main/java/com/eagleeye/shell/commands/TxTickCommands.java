@@ -23,10 +23,14 @@ public class TxTickCommands {
         this.repository = repository;
     }
 
+    private LocalDate parseDate(String s) {
+        return (s == null || s.isEmpty()) ? LocalDate.now() : LocalDate.parse(s);
+    }
+
     @Command(name = "tx-tick collect", description = "Collect TX tick data for a date")
     public String collect(
             @Option(longName = "date", description = "Trade date YYYY-MM-DD (default: today)", defaultValue = "") String date) {
-        LocalDate d = (date == null || date.isEmpty()) ? LocalDate.now() : LocalDate.parse(date);
+        LocalDate d = parseDate(date);
         return switch (service.collectDate(d)) {
             case DateCollectionResult.Collected c -> d + " — TX ticks collected";
             case DateCollectionResult.NoData n    -> d + " — no data";
@@ -37,7 +41,7 @@ public class TxTickCommands {
     @Command(name = "tx-tick list", description = "Show TX tick count and first 5 rows for a date")
     public String list(
             @Option(longName = "date", description = "Trade date YYYY-MM-DD (default: today)", defaultValue = "") String date) {
-        LocalDate d = (date == null || date.isEmpty()) ? LocalDate.now() : LocalDate.parse(date);
+        LocalDate d = parseDate(date);
         long count = repository.countByTradeDate(d);
         List<TxTick> sample = repository.findTop5ByTradeDateOrderByTimeAsc(d);
         StringBuilder sb = new StringBuilder();
@@ -63,8 +67,8 @@ public class TxTickCommands {
         int ok = 0, holidays = 0, errors = 0;
         LocalDate current = fromDate;
         while (!current.isAfter(toDate)) {
-            if (current.getDayOfWeek() == DayOfWeek.SATURDAY ||
-                current.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            DayOfWeek dow = current.getDayOfWeek();
+            if (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY) {
                 current = current.plusDays(1);
                 continue;
             }

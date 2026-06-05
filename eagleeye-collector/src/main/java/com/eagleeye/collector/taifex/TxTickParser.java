@@ -14,7 +14,7 @@ public class TxTickParser {
 
     public List<TxTick> parse(List<String> lines, LocalDate tradeDate) {
         // Steps 1–4: filter and validate each row
-        record Row(String[] cols, String contractMonth, int price, int volume) {}
+        record Row(String contractMonth, int price, int volume, String time, String auctionRaw) {}
         List<Row> candidates = new ArrayList<>();
 
         for (String line : lines) {
@@ -34,7 +34,7 @@ public class TxTickParser {
             }
             if (price < 1000) continue;                                      // rule 4
 
-            candidates.add(new Row(cols, contract, price, volume));
+            candidates.add(new Row(contract, price, volume, cols[3].trim(), cols[8].trim()));
         }
 
         if (candidates.isEmpty()) return List.of();
@@ -53,10 +53,10 @@ public class TxTickParser {
         for (Row r : candidates) {
             if (!r.contractMonth().equals(dominant)) continue;               // step 5
 
-            String time = padTime(r.cols()[3].trim());                       // step 6
+            String time = padTime(r.time());                                   // step 6
             if (time.compareTo("084500") < 0 || time.compareTo("134500") > 0) continue; // step 7
 
-            boolean auction = r.cols()[8].trim().contains("*");              // step 8
+            boolean auction = r.auctionRaw().contains("*");                  // step 8
             ticks.add(new TxTick(tradeDate, time, r.price(), r.volume(), dominant, auction));
         }
 
@@ -65,7 +65,7 @@ public class TxTickParser {
 
     private String padTime(String raw) {
         String digits = raw.replaceAll("[^0-9]", "");
-        while (digits.length() < 6) digits = "0" + digits;
-        return digits.substring(0, 6);
+        return digits.length() >= 6 ? digits.substring(0, 6)
+                                    : "000000".substring(digits.length()) + digits;
     }
 }
