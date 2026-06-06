@@ -75,8 +75,10 @@ public class DashboardService {
         List<OptionsCallPutPosition> putList = callPutRepo
             .findByContractAndTraderTypeAndRightTypeAndTradeDateBetweenOrderByTradeDateAsc(
                 "TXO", TraderType.FINI, RightType.PUT, from, to);
+        // AH data is stored under the *next* trading day (up to +4 days for Friday nights),
+        // so extend the window to catch entries beyond today.
         List<FuturesAhPosition> futuresAhList = futuresAhRepo
-            .findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc("TX", TraderType.FINI, from, to);
+            .findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc("TX", TraderType.FINI, from, to.plusDays(7));
         List<MarginTransaction> marginList  = marginRepo.findByTradeDateBetweenOrderByTradeDateAsc(from, to);
 
         Map<LocalDate, TaiexIndex>        taiexMap = indexByDate(taiexList,   TaiexIndex::getTradeDate);
