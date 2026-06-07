@@ -17,4 +17,11 @@ public interface TxTickRepository extends JpaRepository<TxTick, Long> {
     @Modifying
     @Query("DELETE FROM TxTick t WHERE t.tradeDate = :tradeDate")
     void deleteByTradeDate(LocalDate tradeDate);
+
+    // Load all ticks for a date (auction flag filtered in Java)
+    List<TxTick> findByTradeDateOrderByTimeAsc(LocalDate tradeDate);
+
+    // Distinct trade dates for the date picker, newest first
+    @Query("SELECT DISTINCT t.tradeDate FROM TxTick t ORDER BY t.tradeDate DESC")
+    List<LocalDate> findDistinctTradeDates();
 }
