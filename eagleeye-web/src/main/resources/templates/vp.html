@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh-TW" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EagleEye — Volume Profile</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:         #1a1a1a;
+  --surface:    #222222;
+  --border:     #333333;
+  --text:       #e0e0e0;
+  --muted:      #888888;
+  --amber:      #d97706;
+  --amber-dim:  #92510440;
+  --red:        #ef4444;
+  --red-dim:    rgba(239,68,68,0.20);
+  --green:      #22c55e;
+  --green-dim:  rgba(34,197,94,0.20);
+  --blue:       #378add;
+  --grid:       #2a2a2a;
+  --mono:       'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+}
+
+body { background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 12px; }
+
+/* ── Header ──────────────────────────────────────────────────────── */
+.header { background: var(--surface); border-bottom: 1px solid var(--border); }
+.header-inner {
+  max-width: 1400px; margin: 0 auto; padding: 10px 16px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-title { font-size: 13px; font-weight: 700; color: var(--amber); white-space: nowrap; }
+.header-title span { color: var(--muted); font-weight: 400; }
+.date-select {
+  background: var(--bg); border: 1px solid var(--border); color: var(--text);
+  font-family: var(--mono); font-size: 11px; padding: 4px 8px; border-radius: 3px; cursor: pointer;
+}
+.nav-link { color: var(--muted); font-size: 11px; text-decoration: none; margin-left: auto; }
+.nav-link:hover { color: var(--amber); }
+
+/* ── Metric cards ─────────────────────────────────────────────────── */
+.metrics {
+  max-width: 1400px; margin: 12px auto; padding: 0 16px;
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.metric-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+  padding: 10px 14px; flex: 1; min-width: 140px;
+}
+.metric-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+.metric-value { font-size: 20px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.metric-sub   { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.vpoc-card .metric-value { color: var(--amber); }
+.vah-card  .metric-value { color: var(--red); }
+.val-card  .metric-value { color: var(--green); }
+.close-card.positive .metric-value { color: var(--red); }
+.close-card.negative .metric-value { color: var(--green); }
+
+/* ── Main layout ──────────────────────────────────────────────────── */
+.main-grid {
+  max-width: 1400px; margin: 0 auto; padding: 0 16px 16px;
+  display: grid; grid-template-columns: 420px 1fr; gap: 10px;
+}
+@media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+
+/* ── Chart card ───────────────────────────────────────────────────── */
+.chart-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; padding: 12px 14px 10px;
+}
+.chart-title {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.step-toggle { display: flex; gap: 4px; margin-left: auto; }
+.step-btn {
+  background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+  padding: 2px 10px; border-radius: 3px; cursor: pointer; font-size: 10px; font-family: var(--mono);
+}
+.step-btn.active { border-color: var(--amber); color: var(--amber); background: var(--amber-dim); }
+.chart-canvas-wrap { position: relative; height: 560px; }
+
+/* ── Right panel ──────────────────────────────────────────────────── */
+.right-panel { display: flex; flex-direction: column; gap: 10px; }
+
+/* ── Sessions ─────────────────────────────────────────────────────── */
+.sessions-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.session-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; padding: 10px 12px;
+}
+.session-name  { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.session-range { font-size: 9px; color: var(--muted); margin-bottom: 6px; }
+.session-vpoc  { font-size: 16px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; }
+.session-vol   { font-size: 10px; color: var(--muted); }
+
+/* ── Trading plan ─────────────────────────────────────────────────── */
+.plan-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; padding: 12px 14px; flex: 1;
+}
+.plan-title {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px;
+}
+.key-message {
+  font-size: 11px; color: var(--muted); padding: 8px 10px;
+  background: var(--grid); border-radius: 3px; line-height: 1.6; margin-bottom: 12px;
+}
+
+/* Levels table */
+.levels-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 14px; }
+.levels-table td { padding: 4px 8px; border-bottom: 1px solid var(--grid); }
+.levels-table td:last-child { text-align: right; color: var(--muted); font-size: 10px; }
+.level-price { font-weight: 700; font-variant-numeric: tabular-nums; }
+.level-label { color: var(--muted); }
+.level-bar-cell { width: 60px; }
+.level-bar-wrap { height: 6px; background: var(--grid); border-radius: 2px; }
+.level-bar  { height: 100%; border-radius: 2px; }
+.level-row-vah  .level-price { color: var(--red); }
+.level-row-vpoc .level-price { color: var(--amber); }
+.level-row-val  .level-price { color: var(--green); }
+.divider-row td {
+  padding: 2px 8px; border-bottom: 1px solid var(--border);
+  font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+/* Scenario accordion */
+.scenario-card { border: 1px solid var(--border); border-radius: 3px; margin-bottom: 4px; overflow: hidden; }
+.scenario-header {
+  display: flex; align-items: center; padding: 8px 10px;
+  cursor: pointer; gap: 8px; user-select: none;
+}
+.scenario-header:hover { background: var(--grid); }
+.scenario-bias-bar { width: 3px; height: 16px; border-radius: 1px; flex-shrink: 0; }
+.bias-BULLISH        .scenario-bias-bar { background: var(--green); }
+.bias-NEUTRAL        .scenario-bias-bar { background: var(--muted); }
+.bias-BEARISH        .scenario-bias-bar { background: var(--red); }
+.bias-STRONG_BEARISH .scenario-bias-bar { background: #dc2626; }
+.scenario-title   { font-size: 11px; font-weight: 600; flex: 1; }
+.scenario-chevron { color: var(--muted); font-size: 10px; transition: transform 0.2s; }
+.scenario-card.open .scenario-chevron { transform: rotate(180deg); }
+.scenario-body {
+  display: none; padding: 8px 10px 10px 21px;
+  font-size: 11px; line-height: 1.7; border-top: 1px solid var(--border);
+}
+.scenario-card.open .scenario-body { display: block; }
+.scenario-row { display: flex; gap: 6px; margin-bottom: 2px; }
+.scenario-key { color: var(--muted); min-width: 56px; flex-shrink: 0; }
+.scenario-targets { list-style: none; }
+.scenario-targets li::before { content: "→ "; color: var(--amber); }
+
+/* ── Large trades ─────────────────────────────────────────────────── */
+.large-trades-card { max-width: 1400px; margin: 0 auto 16px; padding: 0 16px; }
+.large-trades-inner {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; padding: 12px 14px;
+}
+.lt-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.lt-title {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.8px;
+}
+.threshold-wrap { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.threshold-label { font-size: 10px; color: var(--muted); }
+.threshold-slider { accent-color: var(--amber); cursor: pointer; }
+.threshold-val    { font-size: 11px; color: var(--amber); min-width: 30px; }
+.lt-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.lt-table th {
+  color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+  padding: 4px 8px; border-bottom: 1px solid var(--border); text-align: left; font-weight: 600;
+}
+.lt-table th:not(:first-child) { text-align: right; }
+.lt-table td { padding: 4px 8px; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+.lt-table td:not(:first-child) { text-align: right; }
+.lt-table tr:hover td { background: #282828; cursor: pointer; }
+.zone-ABOVE_VAH { color: var(--red); }
+.zone-IN_VA     { color: var(--blue); }
+.zone-AT_VPOC   { color: var(--amber); }
+.zone-BELOW_VAL { color: var(--green); }
+.lt-highlighted td { background: #2a2515 !important; }
+
+.loading { color: var(--muted); padding: 20px; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-inner">
+    <div class="header-title">EagleEye <span>/ Volume Profile</span></div>
+    <select id="dateSelect" class="date-select"><option>載入中...</option></select>
+    <a href="/dashboard" class="nav-link">← Dashboard</a>
+  </div>
+</div>
+
+<!-- Metric cards -->
+<div class="metrics">
+  <div class="metric-card vpoc-card">
+    <div class="metric-label">VPOC</div>
+    <div class="metric-value" id="m-vpoc">—</div>
+    <div class="metric-sub"  id="m-vpoc-vol">口數 —</div>
+  </div>
+  <div class="metric-card vah-card">
+    <div class="metric-label">VAH</div>
+    <div class="metric-value" id="m-vah">—</div>
+    <div class="metric-sub">價值區上緣</div>
+  </div>
+  <div class="metric-card val-card">
+    <div class="metric-label">VAL</div>
+    <div class="metric-value" id="m-val">—</div>
+    <div class="metric-sub">價值區下緣</div>
+  </div>
+  <div class="metric-card close-card" id="close-card">
+    <div class="metric-label">收盤 vs VPOC</div>
+    <div class="metric-value" id="m-close-vpoc">—</div>
+    <div class="metric-sub"  id="m-close">收盤 —</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">總量</div>
+    <div class="metric-value" id="m-volume">—</div>
+    <div class="metric-sub"  id="m-ohlc">O — H — L —</div>
+  </div>
+</div>
+
+<!-- Main two-column grid -->
+<div class="main-grid">
+
+  <!-- Left: Volume Profile chart -->
+  <div class="chart-card">
+    <div class="chart-title">
+      Volume Profile
+      <div class="step-toggle">
+        <button class="step-btn" id="btn-step1"  onclick="setStep(1)">1pt</button>
+        <button class="step-btn active" id="btn-step50" onclick="setStep(50)">50pt</button>
+      </div>
+    </div>
+    <div class="chart-canvas-wrap">
+      <canvas id="vpChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="right-panel">
+
+    <!-- Sessions -->
+    <div class="sessions-grid">
+      <div class="session-card">
+        <div class="session-name">開盤</div>
+        <div class="session-range">08:45 – 09:00</div>
+        <div class="session-vpoc" id="s-open-vpoc">—</div>
+        <div class="session-vol"  id="s-open-vol">—</div>
+      </div>
+      <div class="session-card">
+        <div class="session-name">早盤</div>
+        <div class="session-range">09:00 – 12:00</div>
+        <div class="session-vpoc" id="s-morning-vpoc">—</div>
+        <div class="session-vol"  id="s-morning-vol">—</div>
+      </div>
+      <div class="session-card">
+        <div class="session-name">午盤</div>
+        <div class="session-range">12:00 – 13:45</div>
+        <div class="session-vpoc" id="s-afternoon-vpoc">—</div>
+        <div class="session-vol"  id="s-afternoon-vol">—</div>
+      </div>
+    </div>
+
+    <!-- Trading plan -->
+    <div class="plan-card">
+      <div class="plan-title">明日規劃</div>
+      <div class="key-message" id="key-message">載入中...</div>
+      <table class="levels-table"><tbody id="levels-tbody"></tbody></table>
+      <div id="scenarios-container"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Large trades -->
+<div class="large-trades-card">
+  <div class="large-trades-inner">
+    <div class="lt-header">
+      <div class="lt-title">大單明細</div>
+      <div class="threshold-wrap">
+        <span class="threshold-label">門檻</span>
+        <input type="range" class="threshold-slider" id="thresholdSlider"
+               min="20" max="200" step="10" value="50"
+               oninput="onThresholdChange(this.value)">
+        <span class="threshold-val" id="thresholdVal">50口</span>
+      </div>
+    </div>
+    <table class="lt-table">
+      <thead>
+        <tr>
+          <th>時間</th><th>價格</th><th>量(口)</th><th>時段</th><th>vs VPOC</th><th>區域</th>
+        </tr>
+      </thead>
+      <tbody id="lt-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let currentDate = null;
+let currentStep = 50;
+let currentThreshold = 50;
+let vpChart = null;
+let profileData = [];
+let summaryData = null;
+
+// ── Chart annotation plugin ────────────────────────────────────────────────
+const vpAnnotationPlugin = {
+  id: 'vpAnnotations',
+  afterDatasetsDraw(chart) {
+    if (!summaryData || !profileData.length) return;
+    const ctx   = chart.ctx;
+    const xAxis = chart.scales.x;
+    const yAxis = chart.scales.y;
+
+    const annotate = (targetPrice, color, label) => {
+      // Find closest price in the profile
+      let bestIdx = -1, bestDiff = Infinity;
+      profileData.forEach((e, i) => {
+        const d = Math.abs(e.price - targetPrice);
+        if (d < bestDiff) { bestDiff = d; bestIdx = i; }
+      });
+      if (bestIdx < 0) return;
+
+      const y = yAxis.getPixelForValue(bestIdx);
+      if (y < yAxis.top || y > yAxis.bottom) return;
+
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(xAxis.left, y);
+      ctx.lineTo(xAxis.right, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = color;
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(label, xAxis.right - 4, y - 3);
+      ctx.restore();
+    };
+
+    annotate(summaryData.vpoc,  '#d97706', 'VPOC');
+    annotate(summaryData.vah,   '#ef4444', 'VAH');
+    annotate(summaryData.val,   '#22c55e', 'VAL');
+    annotate(summaryData.close, '#ffffff', 'Close');
+  }
+};
+Chart.register(vpAnnotationPlugin);
+
+// ── Chart colors ───────────────────────────────────────────────────────────
+function barColor(e) {
+  switch (e.type) {
+    case 'VPOC': return '#d97706';
+    case 'VAH':  return '#a32d2d';
+    case 'VAL':  return '#0f6e56';
+    case 'THIN': return '#888780';
+    default:     return e.inValueArea ? '#2a5f99' : '#378add';
+  }
+}
+
+// ── Render chart ───────────────────────────────────────────────────────────
+function renderChart(data) {
+  const labels  = data.map(e => String(e.price));
+  const volumes = data.map(e => e.volume);
+  const colors  = data.map(e => barColor(e));
+
+  if (vpChart) {
+    vpChart.data.labels = labels;
+    vpChart.data.datasets[0].data            = volumes;
+    vpChart.data.datasets[0].backgroundColor = colors;
+    vpChart.update();
+    return;
+  }
+
+  vpChart = new Chart(document.getElementById('vpChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data: volumes, backgroundColor: colors, borderWidth: 0 }] },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${data[ctx.dataIndex].volume.toLocaleString()} 口  (${data[ctx.dataIndex].cumVolumePct}%)`,
+            title: ctx => `價格 ${ctx[0].label}`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: '#2a2a2a' }, ticks: { color: '#888', font: { family: 'monospace', size: 10 } } },
+        y: { grid: { color: '#2a2a2a' }, ticks: { color: '#888', font: { family: 'monospace', size: 10 } } }
+      },
+      onClick: (_ev, elements) => {
+        if (!elements.length) return;
+        highlightTradeRow(data[elements[0].index].price);
+      }
+    }
+  });
+}
+
+// ── Metrics ────────────────────────────────────────────────────────────────
+function renderMetrics(s) {
+  document.getElementById('m-vpoc').textContent     = s.vpoc.toLocaleString();
+  document.getElementById('m-vpoc-vol').textContent = `口數 ${s.vpocVolume.toLocaleString()}`;
+  document.getElementById('m-vah').textContent      = s.vah.toLocaleString();
+  document.getElementById('m-val').textContent      = s.val.toLocaleString();
+
+  const delta = s.closeVsVpoc;
+  const sign  = delta >= 0 ? '+' : '';
+  document.getElementById('m-close-vpoc').textContent = sign + delta.toLocaleString();
+  document.getElementById('m-close').textContent      = `收盤 ${s.close.toLocaleString()}`;
+  const cc = document.getElementById('close-card');
+  cc.classList.toggle('positive', delta > 0);
+  cc.classList.toggle('negative', delta < 0);
+
+  document.getElementById('m-volume').textContent = s.totalVolume.toLocaleString();
+  document.getElementById('m-ohlc').textContent   =
+    `O ${s.open.toLocaleString()} H ${s.high.toLocaleString()} L ${s.low.toLocaleString()}`;
+}
+
+// ── Sessions ───────────────────────────────────────────────────────────────
+function renderSessions(s) {
+  const fill = (idVpoc, idVol, data) => {
+    document.getElementById(idVpoc).textContent = data.vpoc > 0 ? data.vpoc.toLocaleString() : '—';
+    document.getElementById(idVol).textContent  = data.volume > 0 ? data.volume.toLocaleString() + ' 口' : '—';
+  };
+  fill('s-open-vpoc',      's-open-vol',      s.open);
+  fill('s-morning-vpoc',   's-morning-vol',   s.morning);
+  fill('s-afternoon-vpoc', 's-afternoon-vol', s.afternoon);
+}
+
+// ── Trading plan ───────────────────────────────────────────────────────────
+function renderPlan(plan) {
+  document.getElementById('key-message').textContent = plan.keyMessage;
+  renderLevels(plan.levels);
+  renderScenarios(plan.scenarios);
+}
+
+function renderLevels(levels) {
+  const maxVol = Math.max(...Object.values(levels).map(l => l.volume || 0));
+  const rows   = [];
+
+  if (levels.resistance2) rows.push({ key: 'resistance2', ...levels.resistance2, cls: '' });
+  if (levels.resistance1) rows.push({ key: 'resistance1', ...levels.resistance1, cls: '' });
+  rows.push({ divider: true, text: `▲ VAH ${levels.vah.price.toLocaleString()}` });
+  rows.push({ key: 'vah',  ...levels.vah,  cls: 'level-row-vah' });
+  rows.push({ key: 'vpoc', ...levels.vpoc, cls: 'level-row-vpoc' });
+  rows.push({ key: 'val',  ...levels.val,  cls: 'level-row-val' });
+  rows.push({ divider: true, text: `▼ VAL ${levels.val.price.toLocaleString()}` });
+  if (levels.support1) rows.push({ key: 'support1', ...levels.support1, cls: '' });
+  if (levels.support2) rows.push({ key: 'support2', ...levels.support2, cls: '' });
+
+  document.getElementById('levels-tbody').innerHTML = rows.map(row => {
+    if (row.divider) return `<tr class="divider-row"><td colspan="4">${row.text}</td></tr>`;
+    const pct   = maxVol > 0 ? Math.round((row.volume || 0) / maxVol * 100) : 0;
+    const bclr  = row.cls.includes('vah')  ? '#a32d2d' :
+                  row.cls.includes('vpoc') ? '#d97706' :
+                  row.cls.includes('val')  ? '#0f6e56' : '#378add';
+    return `<tr class="${row.cls}">
+      <td class="level-price">${row.price.toLocaleString()}</td>
+      <td class="level-label">${row.label}</td>
+      <td class="level-bar-cell">
+        <div class="level-bar-wrap"><div class="level-bar" style="width:${pct}%;background:${bclr}"></div></div>
+      </td>
+      <td>${(row.volume || 0).toLocaleString()} 口</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderScenarios(scenarios) {
+  document.getElementById('scenarios-container').innerHTML = scenarios.map(s => `
+    <div class="scenario-card bias-${s.bias}" onclick="this.classList.toggle('open')">
+      <div class="scenario-header">
+        <div class="scenario-bias-bar"></div>
+        <div class="scenario-title">${s.id}. ${s.title}</div>
+        <div class="scenario-chevron">▼</div>
+      </div>
+      <div class="scenario-body">
+        <div class="scenario-row"><span class="scenario-key">觸發</span><span>${s.trigger}</span></div>
+        <div class="scenario-row"><span class="scenario-key">進場</span><span>${s.entry}</span></div>
+        <div class="scenario-row"><span class="scenario-key">目標</span>
+          <ul class="scenario-targets">${s.targets.map(t => `<li>${t}</li>`).join('')}</ul></div>
+        <div class="scenario-row"><span class="scenario-key">停損</span><span>${s.stopLoss}</span></div>
+        <div class="scenario-row"><span class="scenario-key">依據</span>
+          <span style="color:var(--muted)">${s.rationale}</span></div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Large trades ───────────────────────────────────────────────────────────
+const ZONE_LABELS    = { ABOVE_VAH: '> VAH', IN_VA: 'VA 內', AT_VPOC: 'VPOC', BELOW_VAL: '< VAL' };
+const SESSION_LABELS = { OPEN: '開盤', MORNING: '早盤', AFTERNOON: '午盤', OTHER: '其他' };
+
+function renderLargeTrades(trades) {
+  const tbody = document.getElementById('lt-tbody');
+  if (!trades.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="loading">無大單資料</td></tr>';
+    return;
+  }
+  tbody.innerHTML = trades.map(t => {
+    const sign = t.priceVsVpoc >= 0 ? '+' : '';
+    return `<tr data-price="${t.price}" onclick="onTradeClick(this)">
+      <td>${t.time}</td>
+      <td>${t.price.toLocaleString()}</td>
+      <td>${t.volume.toLocaleString()}</td>
+      <td>${SESSION_LABELS[t.session] || t.session}</td>
+      <td>${sign}${t.priceVsVpoc.toLocaleString()}</td>
+      <td class="zone-${t.zone}">${ZONE_LABELS[t.zone] || t.zone}</td>
+    </tr>`;
+  }).join('');
+}
+
+function onTradeClick(row) {
+  document.querySelectorAll('#lt-tbody tr').forEach(r => r.classList.remove('lt-highlighted'));
+  row.classList.add('lt-highlighted');
+  flashChartBar(parseInt(row.dataset.price));
+}
+
+function flashChartBar(price) {
+  if (!vpChart || !profileData.length) return;
+  const idx = profileData.findIndex(e => e.price === price);
+  if (idx < 0) return;
+  const orig = profileData.map(e => barColor(e));
+  const hi   = [...orig];
+  hi[idx] = '#facc15';
+  vpChart.data.datasets[0].backgroundColor = hi;
+  vpChart.update('none');
+  setTimeout(() => { vpChart.data.datasets[0].backgroundColor = orig; vpChart.update('none'); }, 1500);
+}
+
+function highlightTradeRow(price) {
+  document.querySelectorAll('#lt-tbody tr').forEach(r => {
+    r.classList.toggle('lt-highlighted', parseInt(r.dataset.price) === price);
+  });
+}
+
+// ── Controls ───────────────────────────────────────────────────────────────
+function setStep(s) {
+  currentStep = s;
+  document.getElementById('btn-step1').classList.toggle('active', s === 1);
+  document.getElementById('btn-step50').classList.toggle('active', s === 50);
+  if (currentDate) loadProfile();
+}
+
+function onThresholdChange(v) {
+  currentThreshold = parseInt(v);
+  document.getElementById('thresholdVal').textContent = v + '口';
+  if (currentDate) loadLargeTrades();
+}
+
+// ── Data loading ───────────────────────────────────────────────────────────
+async function loadAll(date) {
+  currentDate = date;
+  const [summary, sessions] = await Promise.all([
+    fetch(`/api/vp/summary?date=${date}&product=TX`).then(r => r.json()),
+    fetch(`/api/vp/sessions?date=${date}&product=TX`).then(r => r.json())
+  ]);
+  summaryData = summary;
+  renderMetrics(summary);
+  renderSessions(sessions);
+  await loadProfile();
+  loadLargeTrades();
+  loadPlan();
+}
+
+async function loadProfile() {
+  const data = await fetch(`/api/vp/profile?date=${currentDate}&product=TX&step=${currentStep}`).then(r => r.json());
+  profileData = data;
+  renderChart(data);
+}
+
+async function loadLargeTrades() {
+  const data = await fetch(`/api/vp/large-trades?date=${currentDate}&product=TX&threshold=${currentThreshold}`).then(r => r.json());
+  renderLargeTrades(data);
+}
+
+async function loadPlan() {
+  const data = await fetch(`/api/vp/plan?date=${currentDate}&product=TX`).then(r => r.json());
+  renderPlan(data);
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+async function init() {
+  const dates = await fetch('/api/vp/available-dates?product=TX').then(r => r.json());
+  const sel = document.getElementById('dateSelect');
+  sel.innerHTML = dates.map(d =>
+    `<option value="${d}">${d.slice(0,4)}/${d.slice(4,6)}/${d.slice(6,8)}</option>`
+  ).join('');
+  sel.onchange = () => loadAll(sel.value);
+  if (dates.length > 0) loadAll(dates[0]);
+}
+
+init();
+</script>
+</body>
+</html>
