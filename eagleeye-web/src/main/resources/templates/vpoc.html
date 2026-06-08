@@ -270,7 +270,7 @@ function initChart() {
 
   // 成交量副圖：佔下方 25%，左側 axis 顯示量能數字
   volumeSeries = chart.addHistogramSeries({
-    priceFormat: { type: 'volume' },
+    priceFormat: { precision: 0, minMove: 1 },
     priceScaleId: 'left',
   });
   chart.priceScale('left').applyOptions({
