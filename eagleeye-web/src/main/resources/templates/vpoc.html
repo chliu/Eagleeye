@@ -259,7 +259,7 @@ function drawBubbles() {
     const r = 4 + (t.volume / maxVol) * 14;
     overlayCtx.beginPath();
     overlayCtx.arc(x, y, r, 0, Math.PI * 2);
-    overlayCtx.fillStyle = bubbleColor(t.zone);
+    overlayCtx.fillStyle = bubbleColor(t.direction);
     overlayCtx.globalAlpha = 0.70;
     overlayCtx.fill();
     overlayCtx.globalAlpha = 1.0;
@@ -278,11 +278,10 @@ function bucketToCandle(epochSec, intervalMinutes) {
   return Math.floor(epochSec / b) * b;
 }
 
-function bubbleColor(zone) {
-  return zone === 'ABOVE_VAH' ? '#ef4444'
-       : zone === 'BELOW_VAL' ? '#22c55e'
-       : zone === 'AT_VPOC'   ? '#d97706'
-       : '#378add';
+function bubbleColor(direction) {
+  return direction === 'UP'   ? '#22c55e'   // active buy  → green
+       : direction === 'DOWN' ? '#ef4444'   // active sell → red
+       : '#666666';                          // neutral     → grey
 }
 
 function addTradeMarkers(trades) {
