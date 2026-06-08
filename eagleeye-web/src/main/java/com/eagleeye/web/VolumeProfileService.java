@@ -55,6 +55,36 @@ public class VolumeProfileService {
         );
     }
 
+    public List<VpCandle> getCandles(LocalDate date, int intervalMinutes) {
+        List<TxTick> ticks = loadTicks(date);
+        TreeMap<Long, VpCandle> map = new TreeMap<>();
+        for (TxTick t : ticks) {
+            long key = toEpochSec(date, t.getTime(), intervalMinutes);
+            VpCandle prev = map.get(key);
+            if (prev == null) {
+                map.put(key, new VpCandle(key,
+                    t.getPrice(), t.getPrice(), t.getPrice(), t.getPrice(), t.getVolume()));
+            } else {
+                map.put(key, new VpCandle(key,
+                    prev.open(),
+                    Math.max(prev.high(), t.getPrice()),
+                    Math.min(prev.low(),  t.getPrice()),
+                    t.getPrice(),
+                    prev.volume() + t.getVolume()));
+            }
+        }
+        return new ArrayList<>(map.values());
+    }
+
+    private long toEpochSec(LocalDate date, String hhmmss, int intervalMinutes) {
+        int h = Integer.parseInt(hhmmss.substring(0, 2));
+        int m = Integer.parseInt(hhmmss.substring(2, 4));
+        int s = Integer.parseInt(hhmmss.substring(4, 6));
+        int totalSec = h * 3600 + m * 60 + s;
+        int bucketSec = (totalSec / (intervalMinutes * 60)) * (intervalMinutes * 60);
+        return date.toEpochDay() * 86400L + bucketSec - 8 * 3600L;
+    }
+
     public List<VpEntry> getProfile(LocalDate date, int step) {
         List<TxTick> ticks = loadTicks(date);
         int totalVolume = totalVolume(ticks);

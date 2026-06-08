@@ -340,4 +340,86 @@ class VolumeProfileServiceTest {
         assertThat(service.classifySession("120000")).isEqualTo("AFTERNOON");
         assertThat(service.classifySession("134500")).isEqualTo("AFTERNOON");
     }
+
+    // ── getCandles tests ──────────────────────────────────────────────────────
+
+    @Test
+    void getCandles_aggregatesTicksIntoOhlcv() {
+        when(repo.findByTradeDateOrderByTimeAsc(any()))
+            .thenReturn(List.of(
+                tick("090000", 40100, 100),
+                tick("090001", 40200, 200),
+                tick("090130", 40050,  50)
+            ));
+
+        List<VpCandle> candles = service.getCandles(LocalDate.of(2026, 6, 5), 5);
+
+        assertThat(candles).hasSize(1);
+        VpCandle c = candles.get(0);
+        assertThat(c.open()).isEqualTo(40100);
+        assertThat(c.high()).isEqualTo(40200);
+        assertThat(c.low()).isEqualTo(40050);
+        assertThat(c.close()).isEqualTo(40050);
+        assertThat(c.volume()).isEqualTo(350);
+    }
+
+    @Test
+    void getCandles_splitsAtIntervalBoundary() {
+        when(repo.findByTradeDateOrderByTimeAsc(any()))
+            .thenReturn(List.of(
+                tick("090000", 40100, 100),
+                tick("090500", 40200, 200),
+                tick("090600", 40300,  50)
+            ));
+
+        List<VpCandle> candles = service.getCandles(LocalDate.of(2026, 6, 5), 5);
+
+        assertThat(candles).hasSize(2);
+        assertThat(candles.get(0).open()).isEqualTo(40100);
+        assertThat(candles.get(0).close()).isEqualTo(40100);
+        assertThat(candles.get(1).open()).isEqualTo(40200);
+        assertThat(candles.get(1).close()).isEqualTo(40300);
+    }
+
+    @Test
+    void getCandles_excludesAuctionTicks() {
+        when(repo.findByTradeDateOrderByTimeAsc(any()))
+            .thenReturn(List.of(
+                auction("084500", 40000, 500),
+                tick("090000", 40100, 100)
+            ));
+
+        List<VpCandle> candles = service.getCandles(LocalDate.of(2026, 6, 5), 5);
+
+        assertThat(candles).hasSize(1);
+        assertThat(candles.get(0).open()).isEqualTo(40100);
+    }
+
+    @Test
+    void getCandles_timeIsUtcEpochSeconds() {
+        when(repo.findByTradeDateOrderByTimeAsc(any()))
+            .thenReturn(List.of(tick("090000", 40100, 100)));
+
+        List<VpCandle> candles = service.getCandles(LocalDate.of(2026, 6, 5), 5);
+
+        long epochDay = LocalDate.of(2026, 6, 5).toEpochDay();
+        long expected = epochDay * 86400L + 9 * 3600L - 8 * 3600L;
+        assertThat(candles.get(0).time()).isEqualTo(expected);
+    }
+
+    @Test
+    void getCandles_interval1MinBucketsEachMinute() {
+        when(repo.findByTradeDateOrderByTimeAsc(any()))
+            .thenReturn(List.of(
+                tick("090000", 40100, 10),
+                tick("090045", 40150, 20),
+                tick("090100", 40200, 30)
+            ));
+
+        List<VpCandle> candles = service.getCandles(LocalDate.of(2026, 6, 5), 1);
+
+        assertThat(candles).hasSize(2);
+        assertThat(candles.get(0).volume()).isEqualTo(30);
+        assertThat(candles.get(1).volume()).isEqualTo(30);
+    }
 }
