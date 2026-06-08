@@ -50,6 +50,14 @@ public class VpController {
         return service.getLargeTrades(parse(date), threshold);
     }
 
+    @GetMapping("/candles")
+    public List<VpCandle> candles(
+            @RequestParam String date,
+            @RequestParam(defaultValue = "TX") String product,
+            @RequestParam(defaultValue = "5") int interval) {
+        return service.getCandles(parse(date), interval);
+    }
+
     @GetMapping("/plan")
     public TradingPlan plan(@RequestParam String date,
                             @RequestParam(defaultValue = "TX") String product) {
