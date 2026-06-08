@@ -465,32 +465,34 @@ function renderScenarios(scenarios) {
     </div>`).join('');
 }
 
-// ── Entry badges from plan (Task 8) ───────────────────────────────────────
+// ── Plan price lines on chart ─────────────────────────────────────────────
+// VAH / VPOC / VAL 已由 addPriceLines() 處理，這裡補其餘四條
 function addBadges(plan) {
   if (!plan || !candleSeries) return;
   if (candleSeries._badgeLines) {
     candleSeries._badgeLines.forEach(l => candleSeries.removePriceLine(l));
   }
   candleSeries._badgeLines = [];
-  const levels = plan.levels;
-  if (levels.val) {
+
+  const cfg = {
+    resistance2: { color: '#f97316', style: LightweightCharts.LineStyle.Dashed   },
+    resistance1: { color: '#f97316', style: LightweightCharts.LineStyle.Dashed   },
+    support1:    { color: '#22c55e', style: LightweightCharts.LineStyle.Dashed   },
+    support2:    { color: '#22c55e', style: LightweightCharts.LineStyle.SparseDotted },
+  };
+
+  Object.entries(cfg).forEach(([key, opt]) => {
+    const lvl = plan.levels[key];
+    if (!lvl) return;
     candleSeries._badgeLines.push(candleSeries.createPriceLine({
-      price: levels.val.price,
-      color: '#22c55e', lineWidth: 1,
-      lineStyle: LightweightCharts.LineStyle.SparseDotted,
-      axisLabelVisible: false,
-      title: `↑ ${levels.val.price.toLocaleString()} 回測不破進多`,
+      price: lvl.price,
+      color: opt.color,
+      lineWidth: 1,
+      lineStyle: opt.style,
+      axisLabelVisible: true,
+      title: lvl.label,
     }));
-  }
-  if (levels.support1) {
-    candleSeries._badgeLines.push(candleSeries.createPriceLine({
-      price: levels.support1.price,
-      color: '#ef4444', lineWidth: 1,
-      lineStyle: LightweightCharts.LineStyle.SparseDotted,
-      axisLabelVisible: false,
-      title: `⚠ ${levels.support1.price.toLocaleString()} 跌破留意`,
-    }));
-  }
+  });
 }
 
 // ── VP bars synced to chart y-axis (Task 9) ───────────────────────────────
