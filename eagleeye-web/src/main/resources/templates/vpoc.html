@@ -268,14 +268,15 @@ function initChart() {
     wickUpColor: '#ef4444', wickDownColor: '#22c55e',
   });
 
-  // 成交量副圖：佔下方 25%，顏色跟 K 線一致（漲紅跌綠）
+  // 成交量副圖：佔下方 25%，左側 axis 顯示量能數字
   volumeSeries = chart.addHistogramSeries({
     priceFormat: { type: 'volume' },
-    priceScaleId: 'vol',
+    priceScaleId: 'left',
   });
-  chart.priceScale('vol').applyOptions({
+  chart.priceScale('left').applyOptions({
     scaleMargins: { top: 0.78, bottom: 0 },
     borderVisible: false,
+    visible: true,
   });
 
   overlayCanvas = document.createElement('canvas');
