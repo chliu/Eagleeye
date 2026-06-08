@@ -424,6 +424,7 @@ async function loadHistory() {
 }
 
 function renderHistoryLines(entries) {
+  if (!candleSeries) return;
   if (candleSeries._histLines) {
     candleSeries._histLines.forEach(l => candleSeries.removePriceLine(l));
   }
