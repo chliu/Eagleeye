@@ -407,6 +407,49 @@ class VolumeProfileServiceTest {
         assertThat(candles.get(0).time()).isEqualTo(expected);
     }
 
+    // ── calcDirections tests ──────────────────────────────────────────────────
+
+    @Test
+    void calcDirections_firstTickIsNeutral() {
+        List<TradeDirection> dirs = service.calcDirections(
+            List.of(tick("090000", 40100, 100)));
+        assertThat(dirs).containsExactly(TradeDirection.NEUTRAL);
+    }
+
+    @Test
+    void calcDirections_detectsUpDownNeutral() {
+        List<TxTick> ticks = List.of(
+            tick("090000", 40100, 100),
+            tick("090001", 40200, 100),
+            tick("090002", 40100, 100),
+            tick("090003", 40100, 100)
+        );
+        assertThat(service.calcDirections(ticks)).containsExactly(
+            TradeDirection.NEUTRAL,
+            TradeDirection.UP,
+            TradeDirection.DOWN,
+            TradeDirection.NEUTRAL
+        );
+    }
+
+    // ── getLargeTrades direction tests ────────────────────────────────────────
+
+    @Test
+    void getLargeTrades_includesDirection() {
+        when(repo.findByTradeDateOrderByTimeAsc(any()))
+            .thenReturn(List.of(
+                tick("090000", 40000, 100),
+                tick("090001", 40100, 200),
+                tick("090002", 39900, 150)
+            ));
+
+        List<LargeTrade> trades = service.getLargeTrades(LocalDate.of(2026, 6, 5), 50);
+
+        assertThat(trades.get(0).direction()).isEqualTo(TradeDirection.UP);
+        assertThat(trades.get(1).direction()).isEqualTo(TradeDirection.DOWN);
+        assertThat(trades.get(2).direction()).isEqualTo(TradeDirection.NEUTRAL);
+    }
+
     @Test
     void getCandles_interval1MinBucketsEachMinute() {
         when(repo.findByTradeDateOrderByTimeAsc(any()))

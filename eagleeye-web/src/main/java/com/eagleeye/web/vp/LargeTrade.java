@@ -6,5 +6,6 @@ public record LargeTrade(
         int volume,
         String session,
         int priceVsVpoc,
-        TradeZone zone
+        TradeZone zone,
+        TradeDirection direction
 ) {}

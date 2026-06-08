@@ -138,19 +138,37 @@ public class VolumeProfileService {
         NavigableMap<Integer, Integer> profile = buildProfile(ticks, 1);
         int vpoc = calcVpoc(profile);
         ValueArea va = calcValueArea(profile, vpoc);
+        List<TradeDirection> directions = calcDirections(ticks);
 
-        return ticks.stream()
-                .filter(t -> t.getVolume() >= threshold)
-                .sorted(Comparator.comparingInt(TxTick::getVolume).reversed())
-                .map(t -> new LargeTrade(
-                        formatTime(t.getTime()),
-                        t.getPrice(),
-                        t.getVolume(),
-                        classifySession(t.getTime()),
-                        t.getPrice() - vpoc,
-                        classifyZone(t.getPrice(), vpoc, va.vah(), va.val())
-                ))
-                .toList();
+        List<LargeTrade> result = new ArrayList<>();
+        for (int i = 0; i < ticks.size(); i++) {
+            TxTick t = ticks.get(i);
+            if (t.getVolume() < threshold) continue;
+            result.add(new LargeTrade(
+                formatTime(t.getTime()),
+                t.getPrice(),
+                t.getVolume(),
+                classifySession(t.getTime()),
+                t.getPrice() - vpoc,
+                classifyZone(t.getPrice(), vpoc, va.vah(), va.val()),
+                directions.get(i)
+            ));
+        }
+        result.sort(Comparator.comparingInt(LargeTrade::volume).reversed());
+        return result;
+    }
+
+    List<TradeDirection> calcDirections(List<TxTick> ticks) {
+        List<TradeDirection> dirs = new ArrayList<>(ticks.size());
+        if (!ticks.isEmpty()) dirs.add(TradeDirection.NEUTRAL);
+        for (int i = 1; i < ticks.size(); i++) {
+            int curr = ticks.get(i).getPrice();
+            int prev = ticks.get(i - 1).getPrice();
+            dirs.add(curr > prev ? TradeDirection.UP
+                   : curr < prev ? TradeDirection.DOWN
+                   : TradeDirection.NEUTRAL);
+        }
+        return dirs;
     }
 
     public TradingPlan getPlan(LocalDate date) {
