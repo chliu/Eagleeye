@@ -176,9 +176,10 @@ public class VolumeProfileService {
     public TradingPlan getPlan(LocalDate date) {
         List<TxTick> ticks = loadTicks(date);
         int totalVolume = totalVolume(ticks);
-        NavigableMap<Integer, Integer> profile = buildProfile(ticks, 1);
-        int vpoc = calcVpoc(profile);
-        ValueArea va = calcValueArea(profile, vpoc);
+        NavigableMap<Integer, Integer> profile1  = buildProfile(ticks, 1);
+        NavigableMap<Integer, Integer> profile50 = buildProfile(ticks, 50);
+        int vpoc = calcVpoc(profile1);
+        ValueArea va = calcValueArea(profile1, vpoc);
 
         int open  = ticks.get(0).getPrice();
         int close = ticks.get(ticks.size() - 1).getPrice();
@@ -189,10 +190,11 @@ public class VolumeProfileService {
         VpSummary summary = new VpSummary(
                 date.format(DATE_FMT), "TX",
                 open, close, high, low,
-                totalVolume, vpoc, profile.get(vpoc),
+                totalVolume, vpoc, profile1.get(vpoc),
                 va.vah(), va.val(), vaPercent, close - vpoc
         );
-        return generatePlan(summary, profile);
+        // S/R levels 用 step-50 profile：每個節點代表 50 點區間，避免相鄰單點被誤選為支撐
+        return generatePlan(summary, profile50);
     }
 
     // ── Private calculations ──────────────────────────────────────────────────
@@ -302,9 +304,9 @@ public class VolumeProfileService {
         Map<String, PriceLevel> levels = new LinkedHashMap<>();
         if (resistance2 > 0) levels.put("resistance2", new PriceLevel(resistance2, "稀薄區上界", profile.getOrDefault(resistance2, 0)));
         if (resistance1 > 0) levels.put("resistance1", new PriceLevel(resistance1, "高量節點",   profile.getOrDefault(resistance1, 0)));
-        levels.put("vah",  new PriceLevel(vah,  "VAH 價值區上緣", profile.getOrDefault(vah,  0)));
-        levels.put("vpoc", new PriceLevel(vpoc, vpocLabel(s),    profile.get(vpoc)));
-        levels.put("val",  new PriceLevel(val,  "VAL 多空分界",  profile.getOrDefault(val,  0)));
+        levels.put("vah",  new PriceLevel(vah,  "VAH 價值區上緣", profile.getOrDefault(bucket(vah,  50), 0)));
+        levels.put("vpoc", new PriceLevel(vpoc, vpocLabel(s),    profile.getOrDefault(bucket(vpoc, 50), 0)));
+        levels.put("val",  new PriceLevel(val,  "VAL 多空分界",  profile.getOrDefault(bucket(val,  50), 0)));
         if (support1 > 0) levels.put("support1", new PriceLevel(support1, "支撐一", profile.getOrDefault(support1, 0)));
         if (support2 > 0) levels.put("support2", new PriceLevel(support2, "支撐二", profile.getOrDefault(support2, 0)));
 
