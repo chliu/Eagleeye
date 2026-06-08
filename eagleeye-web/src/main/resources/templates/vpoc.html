@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-TW" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EagleEye — VPOC Chart</title>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:        #1a1a1a;
+  --surface:   #222222;
+  --border:    #333333;
+  --text:      #e0e0e0;
+  --muted:     #888888;
+  --amber:     #d97706;
+  --amber-dim: #92510440;
+  --red:       #ef4444;
+  --green:     #22c55e;
+  --blue:      #378add;
+  --grid:      #2a2a2a;
+  --mono:      'JetBrains Mono','Fira Code','SF Mono',monospace;
+}
+body { background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 12px; }
+
+/* ── Header ── */
+.header { background: var(--surface); border-bottom: 1px solid var(--border); }
+.header-inner {
+  max-width: 1600px; margin: 0 auto; padding: 10px 16px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.header-title { font-size: 13px; font-weight: 700; color: var(--amber); white-space: nowrap; }
+.header-title span { color: var(--muted); font-weight: 400; }
+.date-select {
+  background: var(--bg); border: 1px solid var(--border); color: var(--text);
+  font-family: var(--mono); font-size: 11px; padding: 4px 8px; border-radius: 3px; cursor: pointer;
+}
+.interval-btns { display: flex; gap: 4px; }
+.interval-btn {
+  background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+  padding: 2px 10px; border-radius: 3px; cursor: pointer; font-size: 10px; font-family: var(--mono);
+}
+.interval-btn.active { border-color: var(--amber); color: var(--amber); background: var(--amber-dim); }
+.nav-link { color: var(--muted); font-size: 11px; text-decoration: none; }
+.nav-link:hover { color: var(--amber); }
+.nav-spacer { margin-left: auto; }
+
+/* ── Metrics ── */
+.metrics {
+  max-width: 1600px; margin: 10px auto; padding: 0 16px;
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.metric-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+  padding: 8px 12px; min-width: 120px;
+}
+.metric-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+.metric-value { font-size: 18px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.metric-sub   { font-size: 10px; color: var(--muted); }
+.vpoc-card .metric-value { color: var(--amber); }
+.vah-card  .metric-value { color: var(--red); }
+.val-card  .metric-value { color: var(--green); }
+
+/* ── Main grid ── */
+.main-grid {
+  max-width: 1600px; margin: 0 auto; padding: 0 16px 16px;
+  display: grid; grid-template-columns: 1fr 200px; gap: 8px;
+}
+.chart-wrap {
+  position: relative; height: 600px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden;
+}
+.vp-panel {
+  position: relative;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden;
+}
+
+/* ── VP bars ── */
+.vp-bar-row  { position: absolute; left: 0; right: 0; display: flex; align-items: center; }
+.vp-bar-fill { height: 100%; border-radius: 1px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-title">EagleEye <span>/ VPOC Chart</span></div>
+    <select id="dateSelect" class="date-select"><option>載入中...</option></select>
+    <div class="interval-btns">
+      <button class="interval-btn"        id="btn-1"  onclick="setIntervalMin(1)">1m</button>
+      <button class="interval-btn active" id="btn-5"  onclick="setIntervalMin(5)">5m</button>
+      <button class="interval-btn"        id="btn-15" onclick="setIntervalMin(15)">15m</button>
+    </div>
+    <a href="/dashboard" class="nav-link nav-spacer">← Dashboard</a>
+    <a href="/vp"        class="nav-link">VP →</a>
+  </div>
+</div>
+
+<div class="metrics">
+  <div class="metric-card vpoc-card">
+    <div class="metric-label">VPOC</div>
+    <div class="metric-value" id="m-vpoc">—</div>
+    <div class="metric-sub"  id="m-vpoc-vol">—</div>
+  </div>
+  <div class="metric-card vah-card">
+    <div class="metric-label">VAH</div>
+    <div class="metric-value" id="m-vah">—</div>
+    <div class="metric-sub">價值區上緣</div>
+  </div>
+  <div class="metric-card val-card">
+    <div class="metric-label">VAL</div>
+    <div class="metric-value" id="m-val">—</div>
+    <div class="metric-sub">價值區下緣</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Close vs VPOC</div>
+    <div class="metric-value" id="m-cvpoc">—</div>
+    <div class="metric-sub"  id="m-close">—</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">總量</div>
+    <div class="metric-value" id="m-vol">—</div>
+    <div class="metric-sub"  id="m-ohlc">—</div>
+  </div>
+</div>
+
+<div class="main-grid">
+  <div id="chartWrap" class="chart-wrap"></div>
+  <div id="vpPanel"   class="vp-panel"></div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let currentDate = null, currentInterval = 5;
+let chart = null, candleSeries = null;
+let overlayCanvas = null, overlayCtx = null;
+let summaryData = null, candleData = [], largeTrades = [], profileData = [], planData = null;
+
+// ── Chart init ─────────────────────────────────────────────────────────────
+function initChart() {
+  const wrap = document.getElementById('chartWrap');
+  chart = LightweightCharts.createChart(wrap, {
+    width:  wrap.clientWidth,
+    height: wrap.clientHeight,
+    layout: { background: { color: '#222222' }, textColor: '#888888' },
+    grid:   { vertLines: { color: '#2a2a2a' }, horzLines: { color: '#2a2a2a' } },
+    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+    rightPriceScale: { borderColor: '#333333' },
+    timeScale: {
+      borderColor: '#333333',
+      timeVisible: true,
+      secondsVisible: false,
+      tickMarkFormatter: t => {
+        const d = new Date((t + 8 * 3600) * 1000);
+        return d.toISOString().slice(11, 16);
+      }
+    },
+    localization: {
+      timeFormatter: t => {
+        const d = new Date((t + 8 * 3600) * 1000);
+        return d.toISOString().slice(11, 16);
+      }
+    }
+  });
+
+  candleSeries = chart.addCandlestickSeries({
+    upColor: '#22c55e', downColor: '#ef4444',
+    borderVisible: false,
+    wickUpColor: '#22c55e', wickDownColor: '#ef4444',
+  });
+
+  overlayCanvas = document.createElement('canvas');
+  overlayCanvas.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;';
+  wrap.appendChild(overlayCanvas);
+  overlayCtx = overlayCanvas.getContext('2d');
+
+  chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
+    redrawOverlay();
+    syncVpBars();
+  });
+
+  window.addEventListener('resize', () => {
+    chart.resize(wrap.clientWidth, wrap.clientHeight);
+    redrawOverlay();
+    syncVpBars();
+  });
+}
+
+// ── Metrics ────────────────────────────────────────────────────────────────
+function renderMetrics(s) {
+  document.getElementById('m-vpoc').textContent    = s.vpoc.toLocaleString();
+  document.getElementById('m-vpoc-vol').textContent = s.vpocVolume.toLocaleString() + ' 口';
+  document.getElementById('m-vah').textContent     = s.vah.toLocaleString();
+  document.getElementById('m-val').textContent     = s.val.toLocaleString();
+  const sign = s.closeVsVpoc >= 0 ? '+' : '';
+  document.getElementById('m-cvpoc').textContent = sign + s.closeVsVpoc.toLocaleString();
+  document.getElementById('m-close').textContent = '收盤 ' + s.close.toLocaleString();
+  document.getElementById('m-vol').textContent   = s.totalVolume.toLocaleString();
+  document.getElementById('m-ohlc').textContent  =
+    `O ${s.open.toLocaleString()} H ${s.high.toLocaleString()} L ${s.low.toLocaleString()}`;
+}
+
+// ── Price lines (Task 6) ───────────────────────────────────────────────────
+function addPriceLines(s) {
+  if (candleSeries._priceLines) {
+    candleSeries._priceLines.forEach(l => candleSeries.removePriceLine(l));
+  }
+  candleSeries._priceLines = [
+    candleSeries.createPriceLine({
+      price: s.vpoc, color: '#d97706', lineWidth: 2,
+      lineStyle: LightweightCharts.LineStyle.Solid,
+      axisLabelVisible: true, title: 'VPOC'
+    }),
+    candleSeries.createPriceLine({
+      price: s.vah, color: '#ef4444', lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.Dashed,
+      axisLabelVisible: true, title: 'VAH'
+    }),
+    candleSeries.createPriceLine({
+      price: s.val, color: '#22c55e', lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.Dashed,
+      axisLabelVisible: true, title: 'VAL'
+    }),
+  ];
+}
+
+// ── Canvas overlay: VA zone + bubbles (Tasks 6 + 7) ───────────────────────
+function redrawOverlay() {
+  if (!chart || !candleSeries) return;
+  const wrap = document.getElementById('chartWrap');
+  overlayCanvas.width  = wrap.clientWidth;
+  overlayCanvas.height = wrap.clientHeight;
+  overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+  // VA zone fill
+  if (summaryData) {
+    const yVah = candleSeries.priceToCoordinate(summaryData.vah);
+    const yVal = candleSeries.priceToCoordinate(summaryData.val);
+    if (yVah != null && yVal != null) {
+      overlayCtx.fillStyle = 'rgba(55,138,221,0.07)';
+      overlayCtx.fillRect(0, yVah, overlayCanvas.width, yVal - yVah);
+    }
+  }
+
+  drawBubbles();
+}
+
+function drawBubbles() {
+  if (!largeTrades.length || !candleSeries) return;
+  const maxVol = Math.max(...largeTrades.map(t => t.volume));
+
+  largeTrades.forEach(t => {
+    const epochSec  = tradeEpochSec(currentDate, t.time);
+    const candleKey = bucketToCandle(epochSec, currentInterval);
+    const x = chart.timeScale().timeToCoordinate(candleKey);
+    const y = candleSeries.priceToCoordinate(t.price);
+    if (x == null || y == null) return;
+
+    const r = 4 + (t.volume / maxVol) * 14;
+    overlayCtx.beginPath();
+    overlayCtx.arc(x, y, r, 0, Math.PI * 2);
+    overlayCtx.fillStyle = bubbleColor(t.zone);
+    overlayCtx.globalAlpha = 0.70;
+    overlayCtx.fill();
+    overlayCtx.globalAlpha = 1.0;
+  });
+}
+
+// ── Trade markers: triangles (Task 7) ─────────────────────────────────────
+function tradeEpochSec(dateStr, timeStr) {
+  const [h, m, s] = timeStr.split(':').map(Number);
+  const y = +dateStr.slice(0, 4), mo = +dateStr.slice(4, 6) - 1, d = +dateStr.slice(6, 8);
+  return Date.UTC(y, mo, d, h - 8, m, s) / 1000;
+}
+
+function bucketToCandle(epochSec, intervalMinutes) {
+  const b = intervalMinutes * 60;
+  return Math.floor(epochSec / b) * b;
+}
+
+function bubbleColor(zone) {
+  return zone === 'ABOVE_VAH' ? '#ef4444'
+       : zone === 'BELOW_VAL' ? '#22c55e'
+       : zone === 'AT_VPOC'   ? '#d97706'
+       : '#378add';
+}
+
+function addTradeMarkers(trades) {
+  if (!candleSeries || !trades.length) return;
+  const markers = trades.map(t => {
+    const candleTime = bucketToCandle(tradeEpochSec(currentDate, t.time), currentInterval);
+    return {
+      time:     candleTime,
+      position: t.direction === 'DOWN' ? 'aboveBar' : 'belowBar',
+      color:    t.direction === 'UP'   ? '#22c55e'
+              : t.direction === 'DOWN' ? '#ef4444' : '#555555',
+      shape:    t.direction === 'UP'   ? 'arrowUp'
+              : t.direction === 'DOWN' ? 'arrowDown' : 'circle',
+      size: 1,
+    };
+  });
+  candleSeries.setMarkers(markers.sort((a, b) => a.time - b.time));
+  redrawOverlay();
+}
+
+// ── Entry badges from plan (Task 8) ───────────────────────────────────────
+function addBadges(plan) {
+  if (!plan || !candleSeries) return;
+  if (candleSeries._badgeLines) {
+    candleSeries._badgeLines.forEach(l => candleSeries.removePriceLine(l));
+  }
+  candleSeries._badgeLines = [];
+  const levels = plan.levels;
+  if (levels.val) {
+    candleSeries._badgeLines.push(candleSeries.createPriceLine({
+      price: levels.val.price,
+      color: '#22c55e', lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.SparseDotted,
+      axisLabelVisible: false,
+      title: `↑ ${levels.val.price.toLocaleString()} 回測不破進多`,
+    }));
+  }
+  if (levels.support1) {
+    candleSeries._badgeLines.push(candleSeries.createPriceLine({
+      price: levels.support1.price,
+      color: '#ef4444', lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.SparseDotted,
+      axisLabelVisible: false,
+      title: `⚠ ${levels.support1.price.toLocaleString()} 跌破留意`,
+    }));
+  }
+}
+
+// ── VP bars synced to chart y-axis (Task 9) ───────────────────────────────
+function renderVpBars(profile) {
+  if (!profile.length) return;
+  const panel  = document.getElementById('vpPanel');
+  const maxVol = Math.max(...profile.map(e => e.volume));
+  panel._profile = profile;
+  panel._maxVol  = maxVol;
+  panel.innerHTML = '';
+
+  profile.forEach((e, i) => {
+    const row  = document.createElement('div');
+    row.className = 'vp-bar-row';
+    row.dataset.idx = i;
+
+    const pct  = Math.round(e.volume / maxVol * 100);
+    const fill = document.createElement('div');
+    fill.className = 'vp-bar-fill';
+    fill.style.width      = pct + '%';
+    fill.style.background = vpBarColor(e);
+    row.appendChild(fill);
+    panel.appendChild(row);
+  });
+
+  syncVpBars();
+}
+
+function vpBarColor(e) {
+  if (e.type === 'VPOC') return '#d97706';
+  if (e.type === 'VAH')  return '#a32d2d';
+  if (e.type === 'VAL')  return '#0f6e56';
+  if (e.type === 'THIN') return '#555555';
+  return e.inValueArea ? '#2a5f99' : '#378add';
+}
+
+function syncVpBars() {
+  if (!candleSeries) return;
+  const panel   = document.getElementById('vpPanel');
+  const profile = panel._profile;
+  if (!profile) return;
+
+  const rows = panel.querySelectorAll('.vp-bar-row');
+  profile.forEach((e, i) => {
+    const yTop = candleSeries.priceToCoordinate(e.price + 50);
+    const yBot = candleSeries.priceToCoordinate(e.price);
+    if (yTop == null || yBot == null) { rows[i].style.display = 'none'; return; }
+    const top    = Math.min(yTop, yBot);
+    const height = Math.max(1, Math.abs(yBot - yTop));
+    rows[i].style.display = 'flex';
+    rows[i].style.top     = top + 'px';
+    rows[i].style.height  = height + 'px';
+  });
+}
+
+// ── Controls ───────────────────────────────────────────────────────────────
+function setIntervalMin(n) {
+  currentInterval = n;
+  ['1', '5', '15'].forEach(id =>
+    document.getElementById('btn-' + id).classList.toggle('active', String(n) === id));
+  if (!currentDate) return;
+  if (candleSeries) candleSeries.setMarkers([]);
+  loadCandles().then(() => addTradeMarkers(largeTrades));
+}
+
+// ── Data loading ───────────────────────────────────────────────────────────
+async function loadCandles() {
+  const data = await fetch(
+    `/api/vp/candles?date=${currentDate}&product=TX&interval=${currentInterval}`
+  ).then(r => r.json());
+  candleData = data;
+  candleSeries.setData(data.map(c => ({
+    time: c.time, open: c.open, high: c.high, low: c.low, close: c.close
+  })));
+  chart.timeScale().fitContent();
+  redrawOverlay();
+  syncVpBars();
+}
+
+async function loadAll(date) {
+  currentDate = date;
+  const [summary, trades, profile, plan] = await Promise.all([
+    fetch(`/api/vp/summary?date=${date}&product=TX`).then(r => r.json()),
+    fetch(`/api/vp/large-trades?date=${date}&product=TX&threshold=50`).then(r => r.json()),
+    fetch(`/api/vp/profile?date=${date}&product=TX&step=50`).then(r => r.json()),
+    fetch(`/api/vp/plan?date=${date}&product=TX`).then(r => r.json()),
+  ]);
+  summaryData = summary;
+  largeTrades = trades;
+  profileData = profile;
+  planData    = plan;
+
+  renderMetrics(summary);
+  addPriceLines(summary);
+  renderVpBars(profile);
+
+  if (candleSeries) candleSeries.setMarkers([]);
+  await loadCandles();
+  addTradeMarkers(trades);
+  addBadges(plan);
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+async function init() {
+  initChart();
+  const dates = await fetch('/api/vp/available-dates?product=TX').then(r => r.json());
+  const sel = document.getElementById('dateSelect');
+  sel.innerHTML = dates.map(d =>
+    `<option value="${d}">${d.slice(0,4)}/${d.slice(4,6)}/${d.slice(6,8)}</option>`
+  ).join('');
+  sel.onchange = () => loadAll(sel.value);
+  if (dates.length > 0) loadAll(dates[0]);
+}
+
+init();
+</script>
+</body>
+</html>
