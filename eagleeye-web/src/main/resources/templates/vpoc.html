@@ -89,6 +89,63 @@ body { background: var(--bg); color: var(--text); font-family: var(--mono); font
   background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden;
 }
 
+/* ── Plan section ── */
+.plan-section {
+  max-width: 1600px; margin: 0 auto 16px; padding: 0 16px;
+  display: grid; grid-template-columns: 280px 1fr; gap: 10px;
+}
+.plan-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; padding: 12px 14px;
+}
+.plan-title {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px;
+}
+.key-message {
+  font-size: 11px; color: var(--muted); padding: 8px 10px;
+  background: var(--grid); border-radius: 3px; line-height: 1.6; margin-bottom: 12px;
+}
+.levels-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.levels-table td { padding: 4px 8px; border-bottom: 1px solid var(--grid); }
+.levels-table td:last-child { text-align: right; color: var(--muted); font-size: 10px; }
+.level-price { font-weight: 700; font-variant-numeric: tabular-nums; }
+.level-label { color: var(--muted); }
+.level-bar-cell { width: 60px; }
+.level-bar-wrap { height: 6px; background: var(--grid); border-radius: 2px; }
+.level-bar { height: 100%; border-radius: 2px; }
+.level-row-vah  .level-price { color: var(--red); }
+.level-row-vpoc .level-price { color: var(--amber); }
+.level-row-val  .level-price { color: var(--green); }
+.divider-row td {
+  padding: 2px 8px; border-bottom: 1px solid var(--border);
+  font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
+}
+.scenarios-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 12px 14px; }
+.scenario-card { border: 1px solid var(--border); border-radius: 3px; margin-bottom: 4px; overflow: hidden; }
+.scenario-header {
+  display: flex; align-items: center; padding: 8px 10px;
+  cursor: pointer; gap: 8px; user-select: none;
+}
+.scenario-header:hover { background: var(--grid); }
+.scenario-bias-bar { width: 3px; height: 16px; border-radius: 1px; flex-shrink: 0; }
+.bias-BULLISH        .scenario-bias-bar { background: var(--green); }
+.bias-NEUTRAL        .scenario-bias-bar { background: var(--muted); }
+.bias-BEARISH        .scenario-bias-bar { background: var(--red); }
+.bias-STRONG_BEARISH .scenario-bias-bar { background: #dc2626; }
+.scenario-title   { font-size: 11px; font-weight: 600; flex: 1; }
+.scenario-chevron { color: var(--muted); font-size: 10px; transition: transform 0.2s; }
+.scenario-card.open .scenario-chevron { transform: rotate(180deg); }
+.scenario-body {
+  display: none; padding: 8px 10px 10px 21px;
+  font-size: 11px; line-height: 1.7; border-top: 1px solid var(--border);
+}
+.scenario-card.open .scenario-body { display: block; }
+.scenario-row { display: flex; gap: 6px; margin-bottom: 2px; }
+.scenario-key { color: var(--muted); min-width: 56px; flex-shrink: 0; }
+.scenario-targets { list-style: none; }
+.scenario-targets li::before { content: "→ "; color: var(--amber); }
+
 /* ── VP bars ── */
 .vp-bar-row  { position: absolute; left: 0; right: 0; display: flex; align-items: center; }
 .vp-bar-fill { height: 100%; border-radius: 1px; }
@@ -150,6 +207,19 @@ body { background: var(--bg); color: var(--text); font-family: var(--mono); font
 <div class="main-grid">
   <div id="chartWrap" class="chart-wrap"></div>
   <div id="vpPanel"   class="vp-panel"></div>
+</div>
+
+<!-- 明日規劃 -->
+<div class="plan-section">
+  <div class="plan-card">
+    <div class="plan-title">關鍵價位</div>
+    <div class="key-message" id="key-message">載入中...</div>
+    <table class="levels-table"><tbody id="levels-tbody"></tbody></table>
+  </div>
+  <div class="scenarios-wrap">
+    <div class="plan-title">明日情境規劃</div>
+    <div id="scenarios-container"></div>
+  </div>
 </div>
 
 <script>
@@ -340,6 +410,61 @@ function addTradeMarkers(trades) {
   redrawOverlay();
 }
 
+// ── 明日規劃 ───────────────────────────────────────────────────────────────
+function renderPlan(plan) {
+  document.getElementById('key-message').textContent = plan.keyMessage;
+  renderLevels(plan.levels);
+  renderScenarios(plan.scenarios);
+}
+
+function renderLevels(levels) {
+  const maxVol = Math.max(...Object.values(levels).map(l => l.volume || 0));
+  const rows = [];
+  if (levels.resistance2) rows.push({ key: 'resistance2', ...levels.resistance2, cls: '' });
+  if (levels.resistance1) rows.push({ key: 'resistance1', ...levels.resistance1, cls: '' });
+  rows.push({ divider: true, text: `▲ VAH ${levels.vah.price.toLocaleString()}` });
+  rows.push({ key: 'vah',  ...levels.vah,  cls: 'level-row-vah' });
+  rows.push({ key: 'vpoc', ...levels.vpoc, cls: 'level-row-vpoc' });
+  rows.push({ key: 'val',  ...levels.val,  cls: 'level-row-val' });
+  rows.push({ divider: true, text: `▼ VAL ${levels.val.price.toLocaleString()}` });
+  if (levels.support1) rows.push({ key: 'support1', ...levels.support1, cls: '' });
+  if (levels.support2) rows.push({ key: 'support2', ...levels.support2, cls: '' });
+
+  document.getElementById('levels-tbody').innerHTML = rows.map(row => {
+    if (row.divider) return `<tr class="divider-row"><td colspan="4">${row.text}</td></tr>`;
+    const pct  = maxVol > 0 ? Math.round((row.volume || 0) / maxVol * 100) : 0;
+    const bclr = row.cls.includes('vah')  ? '#a32d2d'
+               : row.cls.includes('vpoc') ? '#d97706'
+               : row.cls.includes('val')  ? '#0f6e56' : '#378add';
+    return `<tr class="${row.cls}">
+      <td class="level-price">${row.price.toLocaleString()}</td>
+      <td class="level-label">${row.label}</td>
+      <td class="level-bar-cell"><div class="level-bar-wrap"><div class="level-bar" style="width:${pct}%;background:${bclr}"></div></div></td>
+      <td>${(row.volume || 0).toLocaleString()} 口</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderScenarios(scenarios) {
+  document.getElementById('scenarios-container').innerHTML = scenarios.map(s => `
+    <div class="scenario-card bias-${s.bias}" onclick="this.classList.toggle('open')">
+      <div class="scenario-header">
+        <div class="scenario-bias-bar"></div>
+        <div class="scenario-title">${s.id}. ${s.title}</div>
+        <div class="scenario-chevron">▼</div>
+      </div>
+      <div class="scenario-body">
+        <div class="scenario-row"><span class="scenario-key">觸發</span><span>${s.trigger}</span></div>
+        <div class="scenario-row"><span class="scenario-key">進場</span><span>${s.entry}</span></div>
+        <div class="scenario-row"><span class="scenario-key">目標</span>
+          <ul class="scenario-targets">${s.targets.map(t => `<li>${t}</li>`).join('')}</ul></div>
+        <div class="scenario-row"><span class="scenario-key">停損</span><span>${s.stopLoss}</span></div>
+        <div class="scenario-row"><span class="scenario-key">依據</span>
+          <span style="color:var(--muted)">${s.rationale}</span></div>
+      </div>
+    </div>`).join('');
+}
+
 // ── Entry badges from plan (Task 8) ───────────────────────────────────────
 function addBadges(plan) {
   if (!plan || !candleSeries) return;
@@ -471,6 +596,7 @@ async function loadAll(date) {
   await loadCandles();
   addTradeMarkers(trades);
   addBadges(plan);
+  renderPlan(plan);
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
