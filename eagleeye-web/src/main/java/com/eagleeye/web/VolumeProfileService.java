@@ -197,6 +197,23 @@ public class VolumeProfileService {
         return generatePlan(summary, profile50);
     }
 
+    public List<VpHistoryEntry> getHistory(LocalDate current, int days) {
+        return repo.findDistinctTradeDates().stream()
+                .filter(d -> d.isBefore(current))
+                .sorted(Comparator.reverseOrder())
+                .limit(days)
+                .map(d -> {
+                    List<TxTick> ticks = loadTicks(d);
+                    if (ticks.isEmpty()) return null;
+                    NavigableMap<Integer, Integer> profile = buildProfile(ticks, 1);
+                    int vpoc = calcVpoc(profile);
+                    ValueArea va = calcValueArea(profile, vpoc);
+                    return new VpHistoryEntry(d.format(DATE_FMT), vpoc, va.vah(), va.val());
+                })
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
     // ── Private calculations ──────────────────────────────────────────────────
 
     List<TxTick> loadTicks(LocalDate date) {

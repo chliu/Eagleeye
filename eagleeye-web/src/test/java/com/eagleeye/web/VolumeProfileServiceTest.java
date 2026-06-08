@@ -483,4 +483,104 @@ class VolumeProfileServiceTest {
         assertThat(candles.get(0).volume()).isEqualTo(30);
         assertThat(candles.get(1).volume()).isEqualTo(30);
     }
+
+    TxTick tickFor(LocalDate date, String time, int price, int volume) {
+        return new TxTick(date, time, price, volume, "202606", false);
+    }
+
+    // ── getHistory tests ──────────────────────────────────────────────────────
+
+    @Test
+    void getHistory_returnsMostRecentDatesBeforeCurrent() {
+        LocalDate d4 = LocalDate.of(2026, 6, 4);
+        LocalDate d3 = LocalDate.of(2026, 6, 3);
+        when(repo.findDistinctTradeDates()).thenReturn(List.of(
+            LocalDate.of(2026, 6, 5), d4, d3, LocalDate.of(2026, 6, 2)
+        ));
+        when(repo.findByTradeDateOrderByTimeAsc(d4)).thenReturn(List.of(
+            tickFor(d4, "090000", 40200, 100),
+            tickFor(d4, "090001", 40300, 200),
+            tickFor(d4, "090002", 40100,  50)
+        ));
+        when(repo.findByTradeDateOrderByTimeAsc(d3)).thenReturn(List.of(
+            tickFor(d3, "090000", 40100, 150),
+            tickFor(d3, "090001", 40200,  80)
+        ));
+
+        List<VpHistoryEntry> result = service.getHistory(LocalDate.of(2026, 6, 5), 2);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).date()).isEqualTo("20260604");
+        assertThat(result.get(1).date()).isEqualTo("20260603");
+    }
+
+    @Test
+    void getHistory_doesNotIncludeCurrentDate() {
+        LocalDate current = LocalDate.of(2026, 6, 5);
+        LocalDate prev    = LocalDate.of(2026, 6, 4);
+        when(repo.findDistinctTradeDates()).thenReturn(List.of(current, prev));
+        when(repo.findByTradeDateOrderByTimeAsc(prev)).thenReturn(List.of(
+            tickFor(prev, "090000", 40000, 100)
+        ));
+
+        List<VpHistoryEntry> result = service.getHistory(current, 5);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).date()).isEqualTo("20260604");
+    }
+
+    @Test
+    void getHistory_limitsToRequestedDays() {
+        LocalDate d4 = LocalDate.of(2026, 6, 4);
+        LocalDate d3 = LocalDate.of(2026, 6, 3);
+        LocalDate d2 = LocalDate.of(2026, 6, 2);
+        when(repo.findDistinctTradeDates()).thenReturn(List.of(
+            LocalDate.of(2026, 6, 5), d4, d3, d2
+        ));
+        when(repo.findByTradeDateOrderByTimeAsc(d4)).thenReturn(List.of(
+            tickFor(d4, "090000", 40000, 100)
+        ));
+
+        List<VpHistoryEntry> result = service.getHistory(LocalDate.of(2026, 6, 5), 1);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).date()).isEqualTo("20260604");
+    }
+
+    @Test
+    void getHistory_skipsEmptyTickDates() {
+        LocalDate d4 = LocalDate.of(2026, 6, 4);
+        LocalDate d3 = LocalDate.of(2026, 6, 3);
+        when(repo.findDistinctTradeDates()).thenReturn(List.of(
+            LocalDate.of(2026, 6, 5), d4, d3
+        ));
+        when(repo.findByTradeDateOrderByTimeAsc(d4)).thenReturn(List.of());
+        when(repo.findByTradeDateOrderByTimeAsc(d3)).thenReturn(List.of(
+            tickFor(d3, "090000", 40000, 100)
+        ));
+
+        List<VpHistoryEntry> result = service.getHistory(LocalDate.of(2026, 6, 5), 2);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).date()).isEqualTo("20260603");
+    }
+
+    @Test
+    void getHistory_computesVpocVahVal() {
+        LocalDate d4 = LocalDate.of(2026, 6, 4);
+        when(repo.findDistinctTradeDates()).thenReturn(List.of(
+            LocalDate.of(2026, 6, 5), d4
+        ));
+        when(repo.findByTradeDateOrderByTimeAsc(d4)).thenReturn(List.of(
+            tickFor(d4, "090000", 40100, 100),
+            tickFor(d4, "090001", 40200, 300),
+            tickFor(d4, "090002", 40300, 100)
+        ));
+
+        List<VpHistoryEntry> result = service.getHistory(LocalDate.of(2026, 6, 5), 1);
+
+        assertThat(result.get(0).vpoc()).isEqualTo(40200);
+        assertThat(result.get(0).vah()).isEqualTo(40300);
+        assertThat(result.get(0).val()).isEqualTo(40200);
+    }
 }
