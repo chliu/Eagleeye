@@ -58,6 +58,13 @@ public class VpController {
         return service.getCandles(parse(date), interval);
     }
 
+    @GetMapping("/history")
+    public List<VpHistoryEntry> history(
+            @RequestParam String date,
+            @RequestParam(defaultValue = "5") int days) {
+        return service.getHistory(parse(date), days);
+    }
+
     @GetMapping("/plan")
     public TradingPlan plan(@RequestParam String date,
                             @RequestParam(defaultValue = "TX") String product) {
