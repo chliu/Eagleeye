@@ -162,6 +162,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--mono); font
       <button class="interval-btn active" id="btn-5"  onclick="setIntervalMin(5)">5m</button>
       <button class="interval-btn"        id="btn-15" onclick="setIntervalMin(15)">15m</button>
     </div>
+    <button class="interval-btn" id="btn-markers" onclick="toggleMarkers()">▲▼ 箭頭</button>
     <a href="/dashboard" class="nav-link nav-spacer">← Dashboard</a>
     <a href="/vp"        class="nav-link">VP →</a>
   </div>
@@ -224,7 +225,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--mono); font
 
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
-let currentDate = null, currentInterval = 5;
+let currentDate = null, currentInterval = 5, showMarkers = false;
 let chart = null, candleSeries = null, volumeSeries = null;
 let overlayCanvas = null, overlayCtx = null;
 let summaryData = null, candleData = [], largeTrades = [], profileData = [], planData = null;
@@ -392,8 +393,15 @@ function bubbleColor(direction) {
        : '#666666';                          // neutral     → grey
 }
 
+function toggleMarkers() {
+  showMarkers = !showMarkers;
+  document.getElementById('btn-markers').classList.toggle('active', showMarkers);
+  if (showMarkers) addTradeMarkers(largeTrades);
+  else candleSeries.setMarkers([]);
+}
+
 function addTradeMarkers(trades) {
-  if (!candleSeries || !trades.length) return;
+  if (!candleSeries || !trades.length || !showMarkers) return;
   const markers = trades.map(t => {
     const candleTime = bucketToCandle(tradeEpochSec(currentDate, t.time), currentInterval);
     return {
