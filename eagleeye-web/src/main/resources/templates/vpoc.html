@@ -61,6 +61,20 @@ body { background: var(--bg); color: var(--text); font-family: var(--mono); font
 .vah-card  .metric-value { color: var(--red); }
 .val-card  .metric-value { color: var(--green); }
 
+/* ── Legend ── */
+.legend-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+  padding: 8px 12px;
+}
+.legend-rows { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
+.legend-row  { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--muted); }
+.legend-arrow, .legend-dot { font-size: 11px; width: 14px; text-align: center; flex-shrink: 0; }
+.legend-bubble {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, #22c55e 50%, #ef4444 50%);
+  opacity: 0.8;
+}
+
 /* ── Main grid ── */
 .main-grid {
   max-width: 1600px; margin: 0 auto; padding: 0 16px 16px;
@@ -121,6 +135,15 @@ body { background: var(--bg); color: var(--text); font-family: var(--mono); font
     <div class="metric-label">總量</div>
     <div class="metric-value" id="m-vol">—</div>
     <div class="metric-sub"  id="m-ohlc">—</div>
+  </div>
+  <div class="legend-card">
+    <div class="metric-label">圖例</div>
+    <div class="legend-rows">
+      <div class="legend-row"><span class="legend-arrow" style="color:#ef4444">▲</span><span>主動買（成交價高於前一筆）</span></div>
+      <div class="legend-row"><span class="legend-arrow" style="color:#22c55e">▼</span><span>主動賣（成交價低於前一筆）</span></div>
+      <div class="legend-row"><span class="legend-dot"              style="color:#666">●</span><span>中性（同前一筆價格）</span></div>
+      <div class="legend-row"><span class="legend-bubble buy"></span><span>大單氣泡 — 綠=主動買 紅=主動賣</span></div>
+    </div>
   </div>
 </div>
 
