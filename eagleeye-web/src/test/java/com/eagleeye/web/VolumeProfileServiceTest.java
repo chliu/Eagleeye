@@ -417,18 +417,35 @@ class VolumeProfileServiceTest {
     }
 
     @Test
-    void calcDirections_detectsUpDownNeutral() {
+    void calcDirections_detectsUpDown() {
         List<TxTick> ticks = List.of(
             tick("090000", 40100, 100),
             tick("090001", 40200, 100),
-            tick("090002", 40100, 100),
-            tick("090003", 40100, 100)
+            tick("090002", 40100, 100)
         );
         assertThat(service.calcDirections(ticks)).containsExactly(
             TradeDirection.NEUTRAL,
             TradeDirection.UP,
+            TradeDirection.DOWN
+        );
+    }
+
+    @Test
+    void calcDirections_zeroTickInheritsLastDirection() {
+        // 40100 → 40200(UP) → 40200(zero, inherit UP) → 40100(DOWN) → 40100(zero, inherit DOWN)
+        List<TxTick> ticks = List.of(
+            tick("090000", 40100, 100),
+            tick("090001", 40200, 100),
+            tick("090002", 40200, 100),
+            tick("090003", 40100, 100),
+            tick("090004", 40100, 100)
+        );
+        assertThat(service.calcDirections(ticks)).containsExactly(
+            TradeDirection.NEUTRAL,
+            TradeDirection.UP,
+            TradeDirection.UP,
             TradeDirection.DOWN,
-            TradeDirection.NEUTRAL
+            TradeDirection.DOWN
         );
     }
 
@@ -445,6 +462,7 @@ class VolumeProfileServiceTest {
 
         List<LargeTrade> trades = service.getLargeTrades(LocalDate.of(2026, 6, 5), 50);
 
+        // sorted desc: vol=200(UP), vol=150(DOWN), vol=100(NEUTRAL→first tick)
         assertThat(trades.get(0).direction()).isEqualTo(TradeDirection.UP);
         assertThat(trades.get(1).direction()).isEqualTo(TradeDirection.DOWN);
         assertThat(trades.get(2).direction()).isEqualTo(TradeDirection.NEUTRAL);

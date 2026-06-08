@@ -160,13 +160,15 @@ public class VolumeProfileService {
 
     List<TradeDirection> calcDirections(List<TxTick> ticks) {
         List<TradeDirection> dirs = new ArrayList<>(ticks.size());
-        if (!ticks.isEmpty()) dirs.add(TradeDirection.NEUTRAL);
+        TradeDirection last = TradeDirection.NEUTRAL;
+        dirs.add(last);
         for (int i = 1; i < ticks.size(); i++) {
             int curr = ticks.get(i).getPrice();
             int prev = ticks.get(i - 1).getPrice();
-            dirs.add(curr > prev ? TradeDirection.UP
-                   : curr < prev ? TradeDirection.DOWN
-                   : TradeDirection.NEUTRAL);
+            if      (curr > prev) last = TradeDirection.UP;
+            else if (curr < prev) last = TradeDirection.DOWN;
+            // curr == prev: zero-tick rule — 繼承上次方向，不重設
+            dirs.add(last);
         }
         return dirs;
     }
