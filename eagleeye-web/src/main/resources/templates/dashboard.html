@@ -173,7 +173,7 @@ body {
     </div>
 
     <div class="chart-card">
-      <div class="chart-title">資券變化</div>
+      <div class="chart-title">融資變化</div>
       <canvas id="marginChart"></canvas>
     </div>
 
@@ -217,7 +217,6 @@ const labels        = /*[[${vm.dateLabels}]]*/ [];
 const taiexData     = /*[[${vm.taiexClose}]]*/ [];
 const spotNet       = /*[[${vm.spotNetFlow}]]*/ [];
 const marginChg     = /*[[${vm.marginChange}]]*/ [];
-const shortChg      = /*[[${vm.shortChange}]]*/ [];
 const futLong       = /*[[${vm.futuresLongOI}]]*/ [];
 const futShort      = /*[[${vm.futuresShortOI}]]*/ [];
 const optCall       = /*[[${vm.optionsCallOI}]]*/ [];
@@ -322,26 +321,19 @@ new Chart(document.getElementById('spotChart'), {
   options: opts(fmtYiVal)
 });
 
-// Chart 2: 資券變化 — 融資(億, 左軸 y) / 融券(張, 右軸 y3) / 加權指數(右軸 y2)
-// 融資原始為金額(仟元), ÷100,000 → 億; 融券為張數, 維持原值
+// Chart 2: 融資變化 — 融資(億, 左軸 y) / 加權指數(右軸 y2)
+// 融資原始為金額(仟元), ÷100,000 → 億
 const marginYi = marginChg.map(v => v == null ? null : v / 1000);
 const absMax = a => Math.max(1, ...a.filter(v => v != null).map(Math.abs));
-const mAbs = absMax(marginYi), sAbs = absMax(shortChg);
+const mAbs = absMax(marginYi);
 
 const marginOpts = opts(fmtYiVal);
-// 兩條長條皆為正負發散, 對稱上下界讓 0 基線對齊
+// 對稱上下界讓 0 基線對齊
 marginOpts.scales.y.min  = -mAbs; marginOpts.scales.y.max  = mAbs;
-marginOpts.scales.y3 = {
-  position: 'right',
-  min: -sAbs, max: sAbs,
-  ticks: { color: TEXT, font: { size: 9 }, callback: fmtThousand },
-  grid: { drawOnChartArea: false }
-};
 marginOpts.plugins.tooltip.callbacks = {
   label: ctx => {
     const v = ctx.parsed.y;
     if (ctx.dataset.yAxisID === 'y2') return ctx.dataset.label + ': ' + (v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v);
-    if (ctx.dataset.yAxisID === 'y3') return ctx.dataset.label + ': ' + fmtThousand(v) + '張';
     return ctx.dataset.label + ': ' + fmtYiVal(v);
   }
 };
@@ -350,8 +342,7 @@ new Chart(document.getElementById('marginChart'), {
   data: {
     labels,
     datasets: [
-      { type: 'bar', label: '融資變化', data: marginYi, backgroundColor: RED,   yAxisID: 'y',  order: 1 },
-      { type: 'bar', label: '融券變化', data: shortChg, backgroundColor: GREEN, yAxisID: 'y3', order: 1 },
+      { type: 'bar', label: '融資變化', data: marginYi, backgroundColor: marginYi.map(v => v >= 0 ? RED : GREEN), yAxisID: 'y', order: 1 },
       taiexDs()
     ]
   },

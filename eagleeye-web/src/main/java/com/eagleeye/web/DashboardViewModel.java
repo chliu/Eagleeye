@@ -8,7 +8,6 @@ public record DashboardViewModel(
         List<Double> taiexClose,
         List<Long>   spotNetFlow,
         List<Long>   marginChange,
-        List<Long>   shortChange,
         List<Long>   futuresLongOI,
         List<Long>   futuresShortOI,
         List<Long>   optionsCallOI,

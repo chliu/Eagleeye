@@ -113,7 +113,6 @@ public class DashboardService {
         List<Double> taiexClose     = new ArrayList<>();
         List<Long>   spotNetFlow    = new ArrayList<>();
         List<Long>   marginChange   = new ArrayList<>();
-        List<Long>   shortChange    = new ArrayList<>();
         List<Long>   futuresLongOI  = new ArrayList<>();
         List<Long>   futuresShortOI = new ArrayList<>();
         List<Long>   optionsCallOI  = new ArrayList<>();
@@ -149,7 +148,6 @@ public class DashboardService {
             spotNetFlow.add(fl != null ? fl.getForeignNet() : null);
 
             marginChange.add(mg != null ? balanceDelta(mg.getMarginBalance(), mg.getMarginPrevBalance()) : null);
-            shortChange.add(mg != null ? balanceDelta(mg.getShortBalance(), mg.getShortPrevBalance()) : null);
 
             futuresLongOI.add(txEquivalent(txFp, mtxFp, tmfFp, FuturesPosition::getOiLongVolume));
             futuresShortOI.add(txEquivalent(txFp, mtxFp, tmfFp, FuturesPosition::getOiShortVolume));
@@ -167,7 +165,7 @@ public class DashboardService {
 
         return new DashboardViewModel(
             isoDates, dateLabels, taiexClose, spotNetFlow,
-            marginChange, shortChange,
+            marginChange,
             futuresLongOI, futuresShortOI,
             optionsCallOI, optionsPutOI,
             optionsCallNetValue, optionsPutNetValue,

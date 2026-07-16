@@ -122,17 +122,6 @@ class DashboardServiceTest {
     }
 
     @Test
-    void buildViewModel_computesShortChange() {
-        LocalDate d = LocalDate.of(2025, 3, 3);
-        // shortBalance=5000, shortPrev=4000 → delta=1000
-        stubSingleDay(d, 2100000L, 1_000_000_000L, 1000L, 800L, 500L, 300L, 1_010_000L, 1_000_000L, 5000L, 4000L);
-
-        DashboardViewModel vm = service.buildViewModel(20);
-
-        assertThat(vm.shortChange()).containsExactly(1000L);
-    }
-
-    @Test
     void buildViewModel_computesFuturesOI() {
         LocalDate d = LocalDate.of(2025, 3, 3);
         stubSingleDay(d, 2100000L, 1_000_000_000L, 1000L, 600L, 500L, 300L, 1_010_000L, 1_000_000L, 0L, 0L);
