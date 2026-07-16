@@ -187,9 +187,12 @@ public class DashboardService {
     private static Long txEquivalent(FuturesPosition tx, FuturesPosition mtx, FuturesPosition tmf,
                                       Function<FuturesPosition, Long> field) {
         if (tx == null) return null;
-        double total = field.apply(tx)
-            + (mtx != null ? field.apply(mtx) / 4.0 : 0.0)
-            + (tmf != null ? field.apply(tmf) / 20.0 : 0.0);
+        Long txVal  = field.apply(tx);
+        Long mtxVal = mtx != null ? field.apply(mtx) : null;
+        Long tmfVal = tmf != null ? field.apply(tmf) : null;
+        double total = (txVal  != null ? txVal  : 0L)
+            + (mtxVal != null ? mtxVal / 4.0  : 0.0)
+            + (tmfVal != null ? tmfVal / 20.0 : 0.0);
         return Math.round(total);
     }
 
