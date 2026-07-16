@@ -65,8 +65,12 @@ public class DashboardService {
 
         List<TaiexIndex>        taiexList   = taiexRepo.findByTradeDateBetweenOrderByTradeDateAsc(from, to);
         List<InstitutionalFlow> flowList    = flowRepo.findByTradeDateBetweenOrderByTradeDateAsc(from, to);
-        List<FuturesPosition>   futuresList = futuresRepo
+        List<FuturesPosition>   futuresTxList  = futuresRepo
             .findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc("TX", TraderType.FINI, from, to);
+        List<FuturesPosition>   futuresMtxList = futuresRepo
+            .findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc("MTX", TraderType.FINI, from, to);
+        List<FuturesPosition>   futuresTmfList = futuresRepo
+            .findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc("TMF", TraderType.FINI, from, to);
         List<OptionsPosition>   optionsList = optionsRepo
             .findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc("TXO", TraderType.FINI, from, to);
         List<OptionsCallPutPosition> callList = callPutRepo
@@ -83,7 +87,9 @@ public class DashboardService {
 
         Map<LocalDate, TaiexIndex>        taiexMap = indexByDate(taiexList,   TaiexIndex::getTradeDate);
         Map<LocalDate, InstitutionalFlow> flowMap  = indexByDate(flowList,    InstitutionalFlow::getTradeDate);
-        Map<LocalDate, FuturesPosition>   futMap   = indexByDate(futuresList, FuturesPosition::getTradeDate);
+        Map<LocalDate, FuturesPosition>   futTxMap  = indexByDate(futuresTxList,  FuturesPosition::getTradeDate);
+        Map<LocalDate, FuturesPosition>   futMtxMap = indexByDate(futuresMtxList, FuturesPosition::getTradeDate);
+        Map<LocalDate, FuturesPosition>   futTmfMap = indexByDate(futuresTmfList, FuturesPosition::getTradeDate);
         Map<LocalDate, OptionsPosition>   optMap   = indexByDate(optionsList, OptionsPosition::getTradeDate);
         Map<LocalDate, OptionsCallPutPosition> callMap = indexByDate(callList, OptionsCallPutPosition::getTradeDate);
         Map<LocalDate, OptionsCallPutPosition> putMap  = indexByDate(putList,  OptionsCallPutPosition::getTradeDate);
@@ -123,7 +129,9 @@ public class DashboardService {
 
             TaiexIndex        ti = taiexMap.get(date);
             InstitutionalFlow fl = flowMap.get(date);
-            FuturesPosition   fp = futMap.get(date);
+            FuturesPosition   txFp  = futTxMap.get(date);
+            FuturesPosition   mtxFp = futMtxMap.get(date);
+            FuturesPosition   tmfFp = futTmfMap.get(date);
             OptionsPosition   op = optMap.get(date);
             OptionsCallPutPosition cp = callMap.get(date);
             OptionsCallPutPosition pp = putMap.get(date);
@@ -143,8 +151,8 @@ public class DashboardService {
             marginChange.add(mg != null ? balanceDelta(mg.getMarginBalance(), mg.getMarginPrevBalance()) : null);
             shortChange.add(mg != null ? balanceDelta(mg.getShortBalance(), mg.getShortPrevBalance()) : null);
 
-            futuresLongOI.add(fp != null ? fp.getOiLongVolume()  : null);
-            futuresShortOI.add(fp != null ? fp.getOiShortVolume() : null);
+            futuresLongOI.add(txEquivalent(txFp, mtxFp, tmfFp, FuturesPosition::getOiLongVolume));
+            futuresShortOI.add(txEquivalent(txFp, mtxFp, tmfFp, FuturesPosition::getOiShortVolume));
 
             optionsCallOI.add(op != null ? op.getOiLongVolume()  : null);
             optionsPutOI.add(op != null ? op.getOiShortVolume()  : null);
@@ -169,6 +177,20 @@ public class DashboardService {
 
     private static long balanceDelta(Long balance, Long prevBalance) {
         return (balance != null ? balance : 0L) - (prevBalance != null ? prevBalance : 0L);
+    }
+
+    /**
+     * Combines TX, MTX (1 TX = 4 MTX), and TMF (1 TX = 20 TMF) into a single
+     * TX-equivalent lot count, rounded to the nearest whole lot. Missing MTX/TMF
+     * data for a date contributes 0; a missing TX position yields null (no row).
+     */
+    private static Long txEquivalent(FuturesPosition tx, FuturesPosition mtx, FuturesPosition tmf,
+                                      Function<FuturesPosition, Long> field) {
+        if (tx == null) return null;
+        double total = field.apply(tx)
+            + (mtx != null ? field.apply(mtx) / 4.0 : 0.0)
+            + (tmf != null ? field.apply(tmf) / 20.0 : 0.0);
+        return Math.round(total);
     }
 
     private <T> Map<LocalDate, T> indexByDate(List<T> list, Function<T, LocalDate> keyFn) {
