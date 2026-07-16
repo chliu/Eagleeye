@@ -55,6 +55,14 @@ class DashboardServiceTest {
         return fp;
     }
 
+    FuturesPosition futures(LocalDate date, String contract, long oiLong, long oiShort) {
+        FuturesPosition fp = new FuturesPosition(date, contract, TraderType.FINI);
+        fp.setOiLongVolume(oiLong);
+        fp.setOiShortVolume(oiShort);
+        fp.setOiNetVolume(oiLong - oiShort);
+        return fp;
+    }
+
     OptionsPosition options(LocalDate date, long oiLong, long oiShort) {
         OptionsPosition op = new OptionsPosition(date, "TXO", TraderType.FINI);
         op.setOiLongVolume(oiLong);
@@ -133,6 +141,70 @@ class DashboardServiceTest {
 
         assertThat(vm.futuresLongOI()).containsExactly(1000L);
         assertThat(vm.futuresShortOI()).containsExactly(600L);
+    }
+
+    @Test
+    void buildViewModel_combinesTxMtxTmfIntoTxEquivalentNetPosition() {
+        LocalDate d = LocalDate.of(2025, 3, 3);
+
+        when(taiexRepo.findByTradeDateBetweenOrderByTradeDateAsc(any(), any()))
+            .thenReturn(List.of(taiex(d, 2100000L)));
+        when(futuresRepo.findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc(eq("TX"), eq(TraderType.FINI), any(), any()))
+            .thenReturn(List.of(futures(d, "TX", 1000L, 600L)));
+        when(futuresRepo.findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc(eq("MTX"), eq(TraderType.FINI), any(), any()))
+            .thenReturn(List.of(futures(d, "MTX", 400L, 200L)));
+        when(futuresRepo.findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc(eq("TMF"), eq(TraderType.FINI), any(), any()))
+            .thenReturn(List.of(futures(d, "TMF", 200L, 100L)));
+
+        DashboardViewModel vm = service.buildViewModel(20);
+
+        // long:  1000 + 400/4  + 200/20 = 1000 + 100 + 10 = 1110
+        // short:  600 + 200/4  + 100/20 =  600 +  50 +  5 =  655
+        assertThat(vm.futuresLongOI()).containsExactly(1110L);
+        assertThat(vm.futuresShortOI()).containsExactly(655L);
+    }
+
+    @Test
+    void buildViewModel_roundsFractionalTxEquivalentToNearestLot() {
+        LocalDate d = LocalDate.of(2025, 3, 3);
+
+        when(taiexRepo.findByTradeDateBetweenOrderByTradeDateAsc(any(), any()))
+            .thenReturn(List.of(taiex(d, 2100000L)));
+        when(futuresRepo.findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc(eq("TX"), eq(TraderType.FINI), any(), any()))
+            .thenReturn(List.of(futures(d, "TX", 1000L, 600L)));
+        when(futuresRepo.findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc(eq("MTX"), eq(TraderType.FINI), any(), any()))
+            .thenReturn(List.of(futures(d, "MTX", 3L, 1L))); // 3/4=0.75, 1/4=0.25
+        when(futuresRepo.findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc(eq("TMF"), eq(TraderType.FINI), any(), any()))
+            .thenReturn(List.of());
+
+        DashboardViewModel vm = service.buildViewModel(20);
+
+        // long:  1000 + 0.75 = 1000.75 -> rounds to 1001
+        // short:  600 + 0.25 =  600.25 -> rounds to  600
+        assertThat(vm.futuresLongOI()).containsExactly(1001L);
+        assertThat(vm.futuresShortOI()).containsExactly(600L);
+    }
+
+    @Test
+    void buildViewModel_futuresRowStaysTxOnlyWhenMtxTmfMissingForOneDate() {
+        LocalDate d1 = LocalDate.of(2025, 3, 3);
+        LocalDate d2 = LocalDate.of(2025, 3, 4);
+
+        when(taiexRepo.findByTradeDateBetweenOrderByTradeDateAsc(any(), any()))
+            .thenReturn(List.of(taiex(d1, 2100000L), taiex(d2, 2110000L)));
+        when(futuresRepo.findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc(eq("TX"), eq(TraderType.FINI), any(), any()))
+            .thenReturn(List.of(futures(d1, "TX", 1000L, 600L), futures(d2, "TX", 900L, 900L)));
+        when(futuresRepo.findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc(eq("MTX"), eq(TraderType.FINI), any(), any()))
+            .thenReturn(List.of(futures(d1, "MTX", 400L, 200L))); // only d1 has MTX data
+        when(futuresRepo.findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc(eq("TMF"), eq(TraderType.FINI), any(), any()))
+            .thenReturn(List.of());
+
+        DashboardViewModel vm = service.buildViewModel(20);
+
+        // d1: 1000 + 400/4 = 1100 long, 600 + 200/4 = 650 short
+        // d2: TX only that day (no MTX/TMF row) -> 900 long, 900 short
+        assertThat(vm.futuresLongOI()).containsExactly(1100L, 900L);
+        assertThat(vm.futuresShortOI()).containsExactly(650L, 900L);
     }
 
     @Test
