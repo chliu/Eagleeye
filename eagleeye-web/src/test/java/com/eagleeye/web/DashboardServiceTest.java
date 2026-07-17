@@ -25,12 +25,13 @@ class DashboardServiceTest {
     @Mock OptionsPositionRepository optionsRepo;
     @Mock OptionsCallPutPositionRepository callPutRepo;
     @Mock MarginTransactionRepository marginRepo;
+    @Mock FuturesMarketOiRepository futuresMarketOiRepo;
 
     DashboardService service;
 
     @BeforeEach
     void setUp() {
-        service = new DashboardService(taiexRepo, flowRepo, futuresRepo, futuresAhRepo, optionsRepo, callPutRepo, marginRepo);
+        service = new DashboardService(taiexRepo, flowRepo, futuresRepo, futuresAhRepo, optionsRepo, callPutRepo, marginRepo, futuresMarketOiRepo);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -61,6 +62,20 @@ class DashboardServiceTest {
         fp.setOiShortVolume(oiShort);
         fp.setOiNetVolume(oiLong - oiShort);
         return fp;
+    }
+
+    FuturesPosition futures(LocalDate date, String contract, TraderType traderType, long oiLong, long oiShort) {
+        FuturesPosition fp = new FuturesPosition(date, contract, traderType);
+        fp.setOiLongVolume(oiLong);
+        fp.setOiShortVolume(oiShort);
+        fp.setOiNetVolume(oiLong - oiShort);
+        return fp;
+    }
+
+    FuturesMarketOi futuresMarketOi(LocalDate date, String contract, long totalOi) {
+        FuturesMarketOi oi = new FuturesMarketOi(date, contract);
+        oi.setTotalOi(totalOi);
+        return oi;
     }
 
     OptionsPosition options(LocalDate date, long oiLong, long oiShort) {
@@ -194,6 +209,82 @@ class DashboardServiceTest {
         // d2: TX only that day (no MTX/TMF row) -> 900 long, 900 short
         assertThat(vm.futuresLongOI()).containsExactly(1100L, 900L);
         assertThat(vm.futuresShortOI()).containsExactly(650L, 900L);
+    }
+
+    @Test
+    void buildViewModel_computesMtxRetailRatio_whenAllInstitutionalTypesPresent() {
+        LocalDate d = LocalDate.of(2025, 3, 3);
+
+        when(taiexRepo.findByTradeDateBetweenOrderByTradeDateAsc(any(), any()))
+            .thenReturn(List.of(taiex(d, 2100000L)));
+        when(futuresRepo.findByContractAndTradeDateBetweenOrderByTradeDateAsc(eq("MTX"), any(), any()))
+            .thenReturn(List.of(
+                futures(d, "MTX", TraderType.DEALER, 100L, 50L),
+                futures(d, "MTX", TraderType.INVESTMENT_TRUST, 50L, 25L),
+                futures(d, "MTX", TraderType.FINI, 200L, 100L)
+            ));
+        when(futuresMarketOiRepo.findByContractAndTradeDateBetweenOrderByTradeDateAsc(eq("MTX"), any(), any()))
+            .thenReturn(List.of(futuresMarketOi(d, "MTX", 1000L)));
+
+        DashboardViewModel vm = service.buildViewModel(20);
+
+        // institutionalLong=350, institutionalShort=175, totalOi=1000
+        // retailLong=650, retailShort=825, ratio=(650-825)/1000*100=-17.5
+        assertThat(vm.mtxRatio()).containsExactly(-17.5);
+    }
+
+    @Test
+    void buildViewModel_mtxRetailRatio_missingTraderTypeContributesZero() {
+        LocalDate d = LocalDate.of(2025, 3, 3);
+
+        when(taiexRepo.findByTradeDateBetweenOrderByTradeDateAsc(any(), any()))
+            .thenReturn(List.of(taiex(d, 2100000L)));
+        when(futuresRepo.findByContractAndTradeDateBetweenOrderByTradeDateAsc(eq("MTX"), any(), any()))
+            .thenReturn(List.of(futures(d, "MTX", TraderType.FINI, 200L, 100L)));
+        when(futuresMarketOiRepo.findByContractAndTradeDateBetweenOrderByTradeDateAsc(eq("MTX"), any(), any()))
+            .thenReturn(List.of(futuresMarketOi(d, "MTX", 1000L)));
+
+        DashboardViewModel vm = service.buildViewModel(20);
+
+        // institutionalLong=200, institutionalShort=100, totalOi=1000
+        // retailLong=800, retailShort=900, ratio=(800-900)/1000*100=-10.0
+        assertThat(vm.mtxRatio()).containsExactly(-10.0);
+    }
+
+    @Test
+    void buildViewModel_mtxRetailRatio_null_whenTotalOiMissing() {
+        LocalDate d = LocalDate.of(2025, 3, 3);
+
+        when(taiexRepo.findByTradeDateBetweenOrderByTradeDateAsc(any(), any()))
+            .thenReturn(List.of(taiex(d, 2100000L)));
+        when(futuresRepo.findByContractAndTradeDateBetweenOrderByTradeDateAsc(eq("MTX"), any(), any()))
+            .thenReturn(List.of(futures(d, "MTX", TraderType.FINI, 200L, 100L)));
+
+        DashboardViewModel vm = service.buildViewModel(20);
+
+        assertThat(vm.mtxRatio()).containsExactly((Double) null);
+    }
+
+    @Test
+    void buildViewModel_computesTmfRetailRatio_independentlyOfMtx() {
+        LocalDate d = LocalDate.of(2025, 3, 3);
+
+        when(taiexRepo.findByTradeDateBetweenOrderByTradeDateAsc(any(), any()))
+            .thenReturn(List.of(taiex(d, 2100000L)));
+        when(futuresRepo.findByContractAndTradeDateBetweenOrderByTradeDateAsc(eq("MTX"), any(), any()))
+            .thenReturn(List.of());
+        when(futuresRepo.findByContractAndTradeDateBetweenOrderByTradeDateAsc(eq("TMF"), any(), any()))
+            .thenReturn(List.of(futures(d, "TMF", TraderType.FINI, 500L, 500L)));
+        when(futuresMarketOiRepo.findByContractAndTradeDateBetweenOrderByTradeDateAsc(eq("MTX"), any(), any()))
+            .thenReturn(List.of());
+        when(futuresMarketOiRepo.findByContractAndTradeDateBetweenOrderByTradeDateAsc(eq("TMF"), any(), any()))
+            .thenReturn(List.of(futuresMarketOi(d, "TMF", 2000L)));
+
+        DashboardViewModel vm = service.buildViewModel(20);
+
+        // institutionalLong=institutionalShort=500 -> retailLong=retailShort=1500 -> ratio=0.0
+        assertThat(vm.tmfRatio()).containsExactly(0.0);
+        assertThat(vm.mtxRatio()).containsExactly((Double) null);
     }
 
     @Test
