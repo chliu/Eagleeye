@@ -17,7 +17,7 @@ BACKFILL_LINK="/usr/local/bin/eagleeye-backfill"
 WEB_LINK="/usr/local/bin/eagleeye-web"
 
 # Collectors, each its own launchd job (name-addressed via --collector=NAME).
-COLLECTORS=(futah taiex iflow taifex margin txtick)
+COLLECTORS=(futah taiex iflow taifex mktoi margin txtick)
 
 # ── 1. Build ──────────────────────────────────────────────────────────────────
 echo "==> Building JARs..."
@@ -140,6 +140,7 @@ echo "    07:00  FUTAH   after-hours futures (夜盤)"
 echo "    15:05  TAIEX   market index        (TWSE afterTrading FMTQIK)"
 echo "    15:15  IFLOW   institutional flow  (三大法人)"
 echo "    15:30  TAIFEX  TAIFEX OI           (未平倉口數及契約金額)"
+echo "    15:35  MKTOI   total market OI     (期貨每日交易行情, MTX/TMF)"
 echo "    21:35  MARGIN  margin transactions (融資融券)"
 echo "  Manual trigger:  launchctl start com.eagleeye.collector.margin   # one collector"
 echo "  Ad-hoc run all:  eagleeye-collector --collector=ALL              # via the jar directly"

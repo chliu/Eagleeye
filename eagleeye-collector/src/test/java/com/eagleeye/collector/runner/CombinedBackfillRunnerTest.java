@@ -3,6 +3,7 @@ package com.eagleeye.collector.runner;
 import com.eagleeye.collector.service.FuturesOptionsCollectionResult;
 import com.eagleeye.collector.service.CollectionService;
 import com.eagleeye.collector.service.DateCollectionResult;
+import com.eagleeye.collector.service.FuturesMarketOiService;
 import com.eagleeye.collector.service.InstitutionalFlowService;
 import com.eagleeye.collector.service.MarginTransactionService;
 import com.eagleeye.collector.service.MarketIndexCollectionResult;
@@ -26,13 +27,14 @@ class CombinedBackfillRunnerTest {
     @Mock private CollectionService collectionService;
     @Mock private MarginTransactionService marginTransactionService;
     @Mock private InstitutionalFlowService institutionalFlowService;
+    @Mock private FuturesMarketOiService futuresMarketOiService;
 
     private CombinedBackfillRunner runner;
 
     @BeforeEach
     void setUp() {
         runner = new CombinedBackfillRunner(marketIndexService, collectionService, null,
-                marginTransactionService, institutionalFlowService, 0);
+                marginTransactionService, institutionalFlowService, futuresMarketOiService, 0);
     }
 
     // ── Market index: once per month ────────────────────────────────────────────
@@ -43,6 +45,7 @@ class CombinedBackfillRunnerTest {
         stubTaifex();
         stubMargin();
         stubFlow();
+        stubMktoi();
 
         runner.executeBackfill(LocalDate.of(2026, 3, 3), LocalDate.of(2026, 3, 7));
 
@@ -57,6 +60,7 @@ class CombinedBackfillRunnerTest {
         stubTaifex();
         stubMargin();
         stubFlow();
+        stubMktoi();
 
         runner.executeBackfill(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 3, 31));
 
@@ -75,6 +79,7 @@ class CombinedBackfillRunnerTest {
         stubTaifex();
         stubMargin();
         stubFlow();
+        stubMktoi();
 
         runner.executeBackfill(LocalDate.of(2026, 3, 3), LocalDate.of(2026, 3, 6));
 
@@ -92,6 +97,7 @@ class CombinedBackfillRunnerTest {
         stubTaifex();
         stubMargin();
         stubFlow();
+        stubMktoi();
 
         runner.executeBackfill(LocalDate.of(2026, 3, 6), LocalDate.of(2026, 3, 9));
 
@@ -111,6 +117,7 @@ class CombinedBackfillRunnerTest {
         stubTaifex();
         stubMargin();
         stubFlow();
+        stubMktoi();
 
         // 2026-03-25 (Wed) to 2026-03-26 (Thu) = 2 days
         runner.executeBackfill(LocalDate.of(2026, 3, 25), LocalDate.of(2026, 3, 26));
@@ -129,6 +136,7 @@ class CombinedBackfillRunnerTest {
         stubTaifex();
         stubMargin();
         stubFlow();
+        stubMktoi();
 
         runner.executeBackfill(LocalDate.of(2026, 3, 3), LocalDate.of(2026, 3, 6));
 
@@ -145,6 +153,7 @@ class CombinedBackfillRunnerTest {
         stubTaifex();
         stubMargin();
         stubFlow();
+        stubMktoi();
 
         runner.executeBackfill(LocalDate.of(2026, 3, 6), LocalDate.of(2026, 3, 9));
 
@@ -161,6 +170,7 @@ class CombinedBackfillRunnerTest {
         stubTaifex();
         stubMargin();
         stubFlow();
+        stubMktoi();
 
         runner.executeBackfill(LocalDate.of(2026, 3, 3), LocalDate.of(2026, 3, 6));
 
@@ -177,6 +187,7 @@ class CombinedBackfillRunnerTest {
         stubTaifex();
         stubMargin();
         stubFlow();
+        stubMktoi();
 
         runner.executeBackfill(LocalDate.of(2026, 3, 6), LocalDate.of(2026, 3, 9));
 
@@ -204,6 +215,11 @@ class CombinedBackfillRunnerTest {
 
     private void stubFlow() {
         when(institutionalFlowService.collectDate(any(LocalDate.class)))
+                .thenReturn(new DateCollectionResult.Collected(LocalDate.now()));
+    }
+
+    private void stubMktoi() {
+        when(futuresMarketOiService.collectDate(any(LocalDate.class)))
                 .thenReturn(new DateCollectionResult.Collected(LocalDate.now()));
     }
 }
