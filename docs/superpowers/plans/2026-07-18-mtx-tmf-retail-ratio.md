@@ -1372,8 +1372,12 @@ Replace with:
 
         when(taiexRepo.findByTradeDateBetweenOrderByTradeDateAsc(any(), any()))
             .thenReturn(List.of(taiex(d, 2100000L)));
+        when(futuresRepo.findByContractAndTradeDateBetweenOrderByTradeDateAsc(eq("MTX"), any(), any()))
+            .thenReturn(List.of());
         when(futuresRepo.findByContractAndTradeDateBetweenOrderByTradeDateAsc(eq("TMF"), any(), any()))
             .thenReturn(List.of(futures(d, "TMF", TraderType.FINI, 500L, 500L)));
+        when(futuresMarketOiRepo.findByContractAndTradeDateBetweenOrderByTradeDateAsc(eq("MTX"), any(), any()))
+            .thenReturn(List.of());
         when(futuresMarketOiRepo.findByContractAndTradeDateBetweenOrderByTradeDateAsc(eq("TMF"), any(), any()))
             .thenReturn(List.of(futuresMarketOi(d, "TMF", 2000L)));
 
