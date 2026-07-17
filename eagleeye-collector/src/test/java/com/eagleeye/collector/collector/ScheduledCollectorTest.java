@@ -22,6 +22,7 @@ class ScheduledCollectorTest {
     @Mock InstitutionalFlowService institutionalFlowService;
     @Mock CollectionService        collectionService;
     @Mock MarginTransactionService marginTransactionService;
+    @Mock FuturesMarketOiService   futuresMarketOiService;
 
     // ── MarketIndexCollector ──────────────────────────────────────────────────
 
@@ -154,5 +155,38 @@ class ScheduledCollectorTest {
 
         assertThat(result.status()).isEqualTo(CollectionStatus.ERROR);
         assertThat(result.detail()).contains("HTTP 503");
+    }
+
+    // ── TaifexMarketOiCollector ───────────────────────────────────────────────
+
+    @Test
+    void marketOi_collected_returnsOk() {
+        when(futuresMarketOiService.collectDate(DATE))
+                .thenReturn(new DateCollectionResult.Collected(DATE));
+
+        CollectorOutcome result = new TaifexMarketOiCollector(futuresMarketOiService).collect(DATE);
+
+        assertThat(result.status()).isEqualTo(CollectionStatus.COLLECTED);
+        assertThat(result.detail()).isEqualTo("ok");
+    }
+
+    @Test
+    void marketOi_noData_returnsNoData() {
+        when(futuresMarketOiService.collectDate(DATE))
+                .thenReturn(new DateCollectionResult.NoData(DATE));
+
+        assertThat(new TaifexMarketOiCollector(futuresMarketOiService).collect(DATE).status())
+                .isEqualTo(CollectionStatus.NO_DATA);
+    }
+
+    @Test
+    void marketOi_error_returnsError() {
+        when(futuresMarketOiService.collectDate(DATE))
+                .thenReturn(new DateCollectionResult.Error(DATE, "parse failed"));
+
+        CollectorOutcome result = new TaifexMarketOiCollector(futuresMarketOiService).collect(DATE);
+
+        assertThat(result.status()).isEqualTo(CollectionStatus.ERROR);
+        assertThat(result.detail()).contains("parse failed");
     }
 }
