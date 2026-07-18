@@ -229,8 +229,9 @@ class DashboardServiceTest {
         DashboardViewModel vm = service.buildViewModel(20);
 
         // institutionalLong=350, institutionalShort=175, totalOi=1000
-        // retailLong=650, retailShort=825, netPosition=650-825=-175
-        assertThat(vm.mtxNetPosition()).containsExactly(-175L);
+        // retailLong=650, retailShort=825, raw netPosition=650-825=-175
+        // TX-equivalent = -175 / 4.0 = -43.75 -> Math.round -> -44
+        assertThat(vm.mtxNetPosition()).containsExactly(-44L);
     }
 
     @Test
@@ -247,8 +248,9 @@ class DashboardServiceTest {
         DashboardViewModel vm = service.buildViewModel(20);
 
         // institutionalLong=200, institutionalShort=100, totalOi=1000
-        // retailLong=800, retailShort=900, netPosition=800-900=-100
-        assertThat(vm.mtxNetPosition()).containsExactly(-100L);
+        // retailLong=800, retailShort=900, raw netPosition=800-900=-100
+        // TX-equivalent = -100 / 4.0 = -25.0 -> Math.round -> -25
+        assertThat(vm.mtxNetPosition()).containsExactly(-25L);
     }
 
     @Test
@@ -285,6 +287,29 @@ class DashboardServiceTest {
         // institutionalLong=institutionalShort=500 -> retailLong=retailShort=1500 -> netPosition=0
         assertThat(vm.tmfNetPosition()).containsExactly(0L);
         assertThat(vm.mtxNetPosition()).containsExactly((Long) null);
+    }
+
+    @Test
+    void buildViewModel_tmfRetailNetPosition_roundsToNearestTxEquivalentLot() {
+        LocalDate d = LocalDate.of(2025, 3, 3);
+
+        when(taiexRepo.findByTradeDateBetweenOrderByTradeDateAsc(any(), any()))
+            .thenReturn(List.of(taiex(d, 2100000L)));
+        when(futuresRepo.findByContractAndTradeDateBetweenOrderByTradeDateAsc(eq("MTX"), any(), any()))
+            .thenReturn(List.of());
+        when(futuresRepo.findByContractAndTradeDateBetweenOrderByTradeDateAsc(eq("TMF"), any(), any()))
+            .thenReturn(List.of(futures(d, "TMF", TraderType.FINI, 200L, 95L)));
+        when(futuresMarketOiRepo.findByContractAndTradeDateBetweenOrderByTradeDateAsc(eq("MTX"), any(), any()))
+            .thenReturn(List.of());
+        when(futuresMarketOiRepo.findByContractAndTradeDateBetweenOrderByTradeDateAsc(eq("TMF"), any(), any()))
+            .thenReturn(List.of(futuresMarketOi(d, "TMF", 2000L)));
+
+        DashboardViewModel vm = service.buildViewModel(20);
+
+        // institutionalLong=200, institutionalShort=95, totalOi=2000
+        // retailLong=1800, retailShort=1905, raw netPosition=1800-1905=-105
+        // TX-equivalent = -105 / 20.0 = -5.25 -> Math.round -> -5
+        assertThat(vm.tmfNetPosition()).containsExactly(-5L);
     }
 
     @Test
