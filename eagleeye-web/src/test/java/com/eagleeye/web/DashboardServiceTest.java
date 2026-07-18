@@ -212,7 +212,7 @@ class DashboardServiceTest {
     }
 
     @Test
-    void buildViewModel_computesMtxRetailRatio_whenAllInstitutionalTypesPresent() {
+    void buildViewModel_computesMtxRetailNetPosition_whenAllInstitutionalTypesPresent() {
         LocalDate d = LocalDate.of(2025, 3, 3);
 
         when(taiexRepo.findByTradeDateBetweenOrderByTradeDateAsc(any(), any()))
@@ -229,12 +229,12 @@ class DashboardServiceTest {
         DashboardViewModel vm = service.buildViewModel(20);
 
         // institutionalLong=350, institutionalShort=175, totalOi=1000
-        // retailLong=650, retailShort=825, ratio=(650-825)/1000*100=-17.5
-        assertThat(vm.mtxRatio()).containsExactly(-17.5);
+        // retailLong=650, retailShort=825, netPosition=650-825=-175
+        assertThat(vm.mtxNetPosition()).containsExactly(-175L);
     }
 
     @Test
-    void buildViewModel_mtxRetailRatio_missingTraderTypeContributesZero() {
+    void buildViewModel_mtxRetailNetPosition_missingTraderTypeContributesZero() {
         LocalDate d = LocalDate.of(2025, 3, 3);
 
         when(taiexRepo.findByTradeDateBetweenOrderByTradeDateAsc(any(), any()))
@@ -247,12 +247,12 @@ class DashboardServiceTest {
         DashboardViewModel vm = service.buildViewModel(20);
 
         // institutionalLong=200, institutionalShort=100, totalOi=1000
-        // retailLong=800, retailShort=900, ratio=(800-900)/1000*100=-10.0
-        assertThat(vm.mtxRatio()).containsExactly(-10.0);
+        // retailLong=800, retailShort=900, netPosition=800-900=-100
+        assertThat(vm.mtxNetPosition()).containsExactly(-100L);
     }
 
     @Test
-    void buildViewModel_mtxRetailRatio_null_whenTotalOiMissing() {
+    void buildViewModel_mtxRetailNetPosition_null_whenTotalOiMissing() {
         LocalDate d = LocalDate.of(2025, 3, 3);
 
         when(taiexRepo.findByTradeDateBetweenOrderByTradeDateAsc(any(), any()))
@@ -262,11 +262,11 @@ class DashboardServiceTest {
 
         DashboardViewModel vm = service.buildViewModel(20);
 
-        assertThat(vm.mtxRatio()).containsExactly((Double) null);
+        assertThat(vm.mtxNetPosition()).containsExactly((Long) null);
     }
 
     @Test
-    void buildViewModel_computesTmfRetailRatio_independentlyOfMtx() {
+    void buildViewModel_computesTmfRetailNetPosition_independentlyOfMtx() {
         LocalDate d = LocalDate.of(2025, 3, 3);
 
         when(taiexRepo.findByTradeDateBetweenOrderByTradeDateAsc(any(), any()))
@@ -282,9 +282,9 @@ class DashboardServiceTest {
 
         DashboardViewModel vm = service.buildViewModel(20);
 
-        // institutionalLong=institutionalShort=500 -> retailLong=retailShort=1500 -> ratio=0.0
-        assertThat(vm.tmfRatio()).containsExactly(0.0);
-        assertThat(vm.mtxRatio()).containsExactly((Double) null);
+        // institutionalLong=institutionalShort=500 -> retailLong=retailShort=1500 -> netPosition=0
+        assertThat(vm.tmfNetPosition()).containsExactly(0L);
+        assertThat(vm.mtxNetPosition()).containsExactly((Long) null);
     }
 
     @Test

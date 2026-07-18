@@ -142,8 +142,8 @@ public class DashboardService {
         List<Long>   futuresAhLong  = new ArrayList<>();
         List<Long>   futuresAhShort = new ArrayList<>();
         List<Long>   futuresAhNet   = new ArrayList<>();
-        List<Double> mtxRatio       = new ArrayList<>();
-        List<Double> tmfRatio       = new ArrayList<>();
+        List<Long>   mtxNetPosition = new ArrayList<>();
+        List<Long>   tmfNetPosition = new ArrayList<>();
 
         for (int i = 0; i < dates.size(); i++) {
             LocalDate date     = dates.get(i);
@@ -184,8 +184,8 @@ public class DashboardService {
             futuresAhShort.add(ah != null ? ah.getTradingShortVolume() : null);
             futuresAhNet.add(ah != null ? ah.getTradingNetVolume()   : null);
 
-            mtxRatio.add(retailRatio(mtxByDate.get(date), mtxOiMap.get(date)));
-            tmfRatio.add(retailRatio(tmfByDate.get(date), tmfOiMap.get(date)));
+            mtxNetPosition.add(retailNetPosition(mtxByDate.get(date), mtxOiMap.get(date)));
+            tmfNetPosition.add(retailNetPosition(tmfByDate.get(date), tmfOiMap.get(date)));
         }
 
         return new DashboardViewModel(
@@ -195,24 +195,24 @@ public class DashboardService {
             optionsCallOI, optionsPutOI,
             optionsCallNetValue, optionsPutNetValue,
             futuresAhLong, futuresAhShort, futuresAhNet,
-            mtxRatio, tmfRatio,
+            mtxNetPosition, tmfNetPosition,
             days);
     }
 
     /**
-     * 散戶多空比 = (retailLong - retailShort) / totalOi × 100, where retail = market-wide
-     * total OI minus the three institutional trader types combined (dealer+trust+FINI).
+     * 散戶淨部位 = retailLong - retailShort, where retail = market-wide total OI minus
+     * the three institutional trader types combined (dealer+trust+FINI).
      * Null when totalOi is unavailable for the date (chart gap); a missing trader type
      * in {@code institutional} contributes 0 (not a null-the-whole-row).
      */
-    private static Double retailRatio(List<FuturesPosition> institutional, FuturesMarketOi marketOi) {
+    private static Long retailNetPosition(List<FuturesPosition> institutional, FuturesMarketOi marketOi) {
         if (marketOi == null || marketOi.getTotalOi() == null) return null;
         long totalOi = marketOi.getTotalOi();
         long institutionalLong  = sumOi(institutional, FuturesPosition::getOiLongVolume);
         long institutionalShort = sumOi(institutional, FuturesPosition::getOiShortVolume);
         long retailLong  = totalOi - institutionalLong;
         long retailShort = totalOi - institutionalShort;
-        return (retailLong - retailShort) / (double) totalOi * 100.0;
+        return retailLong - retailShort;
     }
 
     private static long sumOi(List<FuturesPosition> positions, Function<FuturesPosition, Long> field) {

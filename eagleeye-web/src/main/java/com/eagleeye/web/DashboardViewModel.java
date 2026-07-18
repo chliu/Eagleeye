@@ -17,7 +17,7 @@ public record DashboardViewModel(
         List<Long>   futuresAhLong,
         List<Long>   futuresAhShort,
         List<Long>   futuresAhNet,
-        List<Double> mtxRatio,
-        List<Double> tmfRatio,
+        List<Long>   mtxNetPosition,
+        List<Long>   tmfNetPosition,
         int          days
 ) {}
