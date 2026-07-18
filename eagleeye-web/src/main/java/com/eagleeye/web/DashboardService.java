@@ -184,8 +184,8 @@ public class DashboardService {
             futuresAhShort.add(ah != null ? ah.getTradingShortVolume() : null);
             futuresAhNet.add(ah != null ? ah.getTradingNetVolume()   : null);
 
-            mtxNetPosition.add(retailNetPosition(mtxByDate.get(date), mtxOiMap.get(date)));
-            tmfNetPosition.add(retailNetPosition(tmfByDate.get(date), tmfOiMap.get(date)));
+            mtxNetPosition.add(retailNetPosition(mtxByDate.get(date), mtxOiMap.get(date), 4.0));
+            tmfNetPosition.add(retailNetPosition(tmfByDate.get(date), tmfOiMap.get(date), 20.0));
         }
 
         return new DashboardViewModel(
@@ -201,18 +201,20 @@ public class DashboardService {
 
     /**
      * 散戶淨部位 = retailLong - retailShort, where retail = market-wide total OI minus
-     * the three institutional trader types combined (dealer+trust+FINI).
+     * the three institutional trader types combined (dealer+trust+FINI), converted to
+     * TX-equivalent lots via {@code divisor} (MTX: 4.0, TMF: 20.0 — same ratios as
+     * {@link #txEquivalent}) and rounded to the nearest whole lot.
      * Null when totalOi is unavailable for the date (chart gap); a missing trader type
      * in {@code institutional} contributes 0 (not a null-the-whole-row).
      */
-    private static Long retailNetPosition(List<FuturesPosition> institutional, FuturesMarketOi marketOi) {
+    private static Long retailNetPosition(List<FuturesPosition> institutional, FuturesMarketOi marketOi, double divisor) {
         if (marketOi == null || marketOi.getTotalOi() == null) return null;
         long totalOi = marketOi.getTotalOi();
         long institutionalLong  = sumOi(institutional, FuturesPosition::getOiLongVolume);
         long institutionalShort = sumOi(institutional, FuturesPosition::getOiShortVolume);
         long retailLong  = totalOi - institutionalLong;
         long retailShort = totalOi - institutionalShort;
-        return retailLong - retailShort;
+        return Math.round((retailLong - retailShort) / divisor);
     }
 
     private static long sumOi(List<FuturesPosition> positions, Function<FuturesPosition, Long> field) {
