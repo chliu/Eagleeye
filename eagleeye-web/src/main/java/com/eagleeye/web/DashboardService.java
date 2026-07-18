@@ -1,6 +1,7 @@
 package com.eagleeye.web;
 
 import com.eagleeye.domain.entity.FuturesAhPosition;
+import com.eagleeye.domain.entity.FuturesMarketOi;
 import com.eagleeye.domain.entity.FuturesPosition;
 import com.eagleeye.domain.entity.InstitutionalFlow;
 import com.eagleeye.domain.entity.MarginTransaction;
@@ -10,6 +11,7 @@ import com.eagleeye.domain.entity.RightType;
 import com.eagleeye.domain.entity.TaiexIndex;
 import com.eagleeye.domain.entity.TraderType;
 import com.eagleeye.domain.repository.FuturesAhPositionRepository;
+import com.eagleeye.domain.repository.FuturesMarketOiRepository;
 import com.eagleeye.domain.repository.FuturesPositionRepository;
 import com.eagleeye.domain.repository.InstitutionalFlowRepository;
 import com.eagleeye.domain.repository.MarginTransactionRepository;
@@ -27,6 +29,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -42,6 +45,7 @@ public class DashboardService {
     private final OptionsPositionRepository optionsRepo;
     private final OptionsCallPutPositionRepository callPutRepo;
     private final MarginTransactionRepository marginRepo;
+    private final FuturesMarketOiRepository futuresMarketOiRepo;
 
     public DashboardService(TaiexIndexRepository taiexRepo,
                             InstitutionalFlowRepository flowRepo,
@@ -49,7 +53,8 @@ public class DashboardService {
                             FuturesAhPositionRepository futuresAhRepo,
                             OptionsPositionRepository optionsRepo,
                             OptionsCallPutPositionRepository callPutRepo,
-                            MarginTransactionRepository marginRepo) {
+                            MarginTransactionRepository marginRepo,
+                            FuturesMarketOiRepository futuresMarketOiRepo) {
         this.taiexRepo = taiexRepo;
         this.flowRepo = flowRepo;
         this.futuresRepo = futuresRepo;
@@ -57,6 +62,7 @@ public class DashboardService {
         this.optionsRepo = optionsRepo;
         this.callPutRepo = callPutRepo;
         this.marginRepo = marginRepo;
+        this.futuresMarketOiRepo = futuresMarketOiRepo;
     }
 
     public DashboardViewModel buildViewModel(int days) {
@@ -84,6 +90,14 @@ public class DashboardService {
         List<FuturesAhPosition> futuresAhList = futuresAhRepo
             .findByContractAndTraderTypeAndTradeDateBetweenOrderByTradeDateAsc("TX", TraderType.FINI, from, to.plusDays(7));
         List<MarginTransaction> marginList  = marginRepo.findByTradeDateBetweenOrderByTradeDateAsc(from, to);
+        List<FuturesPosition>   futuresMtxAllList = futuresRepo
+            .findByContractAndTradeDateBetweenOrderByTradeDateAsc("MTX", from, to);
+        List<FuturesPosition>   futuresTmfAllList = futuresRepo
+            .findByContractAndTradeDateBetweenOrderByTradeDateAsc("TMF", from, to);
+        List<FuturesMarketOi>   mtxOiList = futuresMarketOiRepo
+            .findByContractAndTradeDateBetweenOrderByTradeDateAsc("MTX", from, to);
+        List<FuturesMarketOi>   tmfOiList = futuresMarketOiRepo
+            .findByContractAndTradeDateBetweenOrderByTradeDateAsc("TMF", from, to);
 
         Map<LocalDate, TaiexIndex>        taiexMap = indexByDate(taiexList,   TaiexIndex::getTradeDate);
         Map<LocalDate, InstitutionalFlow> flowMap  = indexByDate(flowList,    InstitutionalFlow::getTradeDate);
@@ -97,6 +111,12 @@ public class DashboardService {
         NavigableMap<LocalDate, FuturesAhPosition> ahMap = futuresAhList.stream()
             .collect(toMap(FuturesAhPosition::getTradeDate, Function.identity(), (a, b) -> b, TreeMap::new));
         Map<LocalDate, MarginTransaction> mgnMap   = indexByDate(marginList,  MarginTransaction::getTradeDate);
+        Map<LocalDate, List<FuturesPosition>> mtxByDate = futuresMtxAllList.stream()
+            .collect(Collectors.groupingBy(FuturesPosition::getTradeDate));
+        Map<LocalDate, List<FuturesPosition>> tmfByDate = futuresTmfAllList.stream()
+            .collect(Collectors.groupingBy(FuturesPosition::getTradeDate));
+        Map<LocalDate, FuturesMarketOi> mtxOiMap = indexByDate(mtxOiList, FuturesMarketOi::getTradeDate);
+        Map<LocalDate, FuturesMarketOi> tmfOiMap = indexByDate(tmfOiList, FuturesMarketOi::getTradeDate);
 
         // Use taiex dates as the x-axis base (represents trading days).
         // Other sources may arrive at different times — missing dates get null
@@ -122,6 +142,8 @@ public class DashboardService {
         List<Long>   futuresAhLong  = new ArrayList<>();
         List<Long>   futuresAhShort = new ArrayList<>();
         List<Long>   futuresAhNet   = new ArrayList<>();
+        List<Double> mtxRatio       = new ArrayList<>();
+        List<Double> tmfRatio       = new ArrayList<>();
 
         for (int i = 0; i < dates.size(); i++) {
             LocalDate date     = dates.get(i);
@@ -161,6 +183,9 @@ public class DashboardService {
             futuresAhLong.add(ah != null ? ah.getTradingLongVolume()  : null);
             futuresAhShort.add(ah != null ? ah.getTradingShortVolume() : null);
             futuresAhNet.add(ah != null ? ah.getTradingNetVolume()   : null);
+
+            mtxRatio.add(retailRatio(mtxByDate.get(date), mtxOiMap.get(date)));
+            tmfRatio.add(retailRatio(tmfByDate.get(date), tmfOiMap.get(date)));
         }
 
         return new DashboardViewModel(
@@ -170,7 +195,34 @@ public class DashboardService {
             optionsCallOI, optionsPutOI,
             optionsCallNetValue, optionsPutNetValue,
             futuresAhLong, futuresAhShort, futuresAhNet,
+            mtxRatio, tmfRatio,
             days);
+    }
+
+    /**
+     * 散戶多空比 = (retailLong - retailShort) / totalOi × 100, where retail = market-wide
+     * total OI minus the three institutional trader types combined (dealer+trust+FINI).
+     * Null when totalOi is unavailable for the date (chart gap); a missing trader type
+     * in {@code institutional} contributes 0 (not a null-the-whole-row).
+     */
+    private static Double retailRatio(List<FuturesPosition> institutional, FuturesMarketOi marketOi) {
+        if (marketOi == null || marketOi.getTotalOi() == null) return null;
+        long totalOi = marketOi.getTotalOi();
+        long institutionalLong  = sumOi(institutional, FuturesPosition::getOiLongVolume);
+        long institutionalShort = sumOi(institutional, FuturesPosition::getOiShortVolume);
+        long retailLong  = totalOi - institutionalLong;
+        long retailShort = totalOi - institutionalShort;
+        return (retailLong - retailShort) / (double) totalOi * 100.0;
+    }
+
+    private static long sumOi(List<FuturesPosition> positions, Function<FuturesPosition, Long> field) {
+        if (positions == null) return 0L;
+        return positions.stream()
+            .mapToLong(fp -> {
+                Long v = field.apply(fp);
+                return v != null ? v : 0L;
+            })
+            .sum();
     }
 
     private static long balanceDelta(Long balance, Long prevBalance) {

@@ -3,6 +3,7 @@ package com.eagleeye.collector.runner;
 import com.eagleeye.collector.service.FuturesOptionsCollectionResult;
 import com.eagleeye.collector.service.CollectionService;
 import com.eagleeye.collector.service.DateCollectionResult;
+import com.eagleeye.collector.service.FuturesMarketOiService;
 import com.eagleeye.collector.service.InstitutionalFlowService;
 import com.eagleeye.collector.service.MarginTransactionService;
 import com.eagleeye.collector.service.MarketIndexCollectionResult;
@@ -47,6 +48,7 @@ public class CombinedBackfillRunner implements ApplicationRunner {
     private final CollectionService collectionService;
     private final MarginTransactionService marginTransactionService;
     private final InstitutionalFlowService institutionalFlowService;
+    private final FuturesMarketOiService futuresMarketOiService;
     private final ApplicationContext applicationContext;
     private final long requestDelayMs;
 
@@ -55,9 +57,10 @@ public class CombinedBackfillRunner implements ApplicationRunner {
                                   CollectionService collectionService,
                                   ApplicationContext applicationContext,
                                   MarginTransactionService marginTransactionService,
-                                  InstitutionalFlowService institutionalFlowService) {
+                                  InstitutionalFlowService institutionalFlowService,
+                                  FuturesMarketOiService futuresMarketOiService) {
         this(marketIndexService, collectionService, applicationContext,
-                marginTransactionService, institutionalFlowService, 500);
+                marginTransactionService, institutionalFlowService, futuresMarketOiService, 500);
     }
 
     CombinedBackfillRunner(MarketIndexService marketIndexService,
@@ -65,11 +68,13 @@ public class CombinedBackfillRunner implements ApplicationRunner {
                            ApplicationContext applicationContext,
                            MarginTransactionService marginTransactionService,
                            InstitutionalFlowService institutionalFlowService,
+                           FuturesMarketOiService futuresMarketOiService,
                            long requestDelayMs) {
         this.marketIndexService = marketIndexService;
         this.collectionService = collectionService;
         this.marginTransactionService = marginTransactionService;
         this.institutionalFlowService = institutionalFlowService;
+        this.futuresMarketOiService = futuresMarketOiService;
         this.applicationContext = applicationContext;
         this.requestDelayMs = requestDelayMs;
     }
@@ -120,6 +125,10 @@ public class CombinedBackfillRunner implements ApplicationRunner {
 
                     DateCollectionResult flowResult = institutionalFlowService.collectDate(day);
                     printDateResult("IFLOW ", day, flowResult);
+                    Thread.sleep(requestDelayMs);
+
+                    DateCollectionResult mktoiResult = futuresMarketOiService.collectDate(day);
+                    printDateResult("MKTOI ", day, mktoiResult);
                     Thread.sleep(requestDelayMs);
                 }
                 day = day.plusDays(1);
