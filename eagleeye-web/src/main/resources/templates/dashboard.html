@@ -191,12 +191,12 @@ body {
 
   <div class="chart-grid" style="margin-top:10px;">
     <div class="chart-card">
-      <div class="chart-title">小台指散戶淨部位 vs 收盤價</div>
+      <div class="chart-title">小台指散戶淨部位（大台等值）vs 收盤價</div>
       <canvas id="mtxRatioChart"></canvas>
     </div>
 
     <div class="chart-card">
-      <div class="chart-title">微台指散戶淨部位 vs 收盤價</div>
+      <div class="chart-title">微台指散戶淨部位（大台等值）vs 收盤價</div>
       <canvas id="tmfRatioChart"></canvas>
     </div>
   </div>
@@ -418,7 +418,7 @@ new Chart(document.getElementById('mtxRatioChart'), {
   data: {
     labels,
     datasets: [
-      { type: 'bar', label: '小台指散戶淨部位', data: mtxNetPosition, backgroundColor: mtxNetPosition.map(v => v >= 0 ? RED : GREEN), yAxisID: 'y', order: 1 },
+      { type: 'bar', label: '小台指散戶淨部位（大台等值）', data: mtxNetPosition, backgroundColor: mtxNetPosition.map(v => v >= 0 ? RED : GREEN), yAxisID: 'y', order: 1 },
       taiexDs()
     ]
   },
@@ -441,7 +441,7 @@ new Chart(document.getElementById('tmfRatioChart'), {
   data: {
     labels,
     datasets: [
-      { type: 'bar', label: '微台指散戶淨部位', data: tmfNetPosition, backgroundColor: tmfNetPosition.map(v => v >= 0 ? RED : GREEN), yAxisID: 'y', order: 1 },
+      { type: 'bar', label: '微台指散戶淨部位（大台等值）', data: tmfNetPosition, backgroundColor: tmfNetPosition.map(v => v >= 0 ? RED : GREEN), yAxisID: 'y', order: 1 },
       taiexDs()
     ]
   },
